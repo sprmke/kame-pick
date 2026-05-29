@@ -1,0 +1,37 @@
+Hi {{first_name}},
+
+Thank you for applying for our {{role}} role. We reviewed your application and would like to move forward with the next step.
+
+Please reply to this email with your answers below.
+
+About you
+- Age & current location (city/province):
+- Do you have professional working exp as developer (not including internships):
+- Total years of development experience (including school or personal projects):
+- Can you work full-time (8 hours/day, Mon–Fri):
+- Do you have current work right now?
+- When are you able to start:
+- Expected monthly salary range (PHP):
+
+Work setup
+- Do you have a personal laptop/PC for work? Please share specs:
+- Are you open to work on outsourced client projects as part of this role?
+- Are you comfortable working with multiple projects when needed?
+
+Technical skills (rate your exp & confidence from 1 to 10)
+- HTML, CSS, Tailwind:
+- JavaScript:
+- TypeScript:
+- React or Next.js:
+- Node.js:
+- Supabase:
+- AI tools (Cursor, Claude Code, Copilot, ChatGPT):
+- Git (branching, pull requests, merges, CI/CD):
+- Cloud / deployment (AWS, Vercel, or similar):
+- AI coding tools (Cursor, Claude Code, Copilot)
+- Written English communication:
+
+If your profile is a strong match, please also share your availability for a short call next week.
+
+Best regards,
+{{team_name}}

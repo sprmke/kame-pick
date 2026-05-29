@@ -1,0 +1,155 @@
+# Edit this file to match YOUR job post requirements.
+# The analyze-candidates skill reads this when ranking applicants.
+
+role: AI-Assisted Web Developer
+
+employment:
+  types:
+    - Contract
+    - Freelance
+  setup: Remote / Hybrid (Pampanga)
+  target_levels:
+    - Fresh Grad
+    - Intern
+    - Junior Dev
+  full_time_hours_per_day: 8
+
+tech_stack:
+  required:
+    - programming and web development basics
+    - Git fundamentals
+    - Visual Studio Code or Cursor
+    - AI coding tools (ChatGPT, Claude Code, Cursor, or similar)
+    - good written English communication
+  preferred:
+    - HTML
+    - CSS
+    - JavaScript
+    - TypeScript
+    - React
+    - Next.js
+    - Supabase
+    - Node.js
+    - REST APIs
+    - APIs and databases (basic understanding)
+
+nice_to_have:
+  - experience building web app projects
+  - AI-assisted or vibe coding workflows
+  - based in Pampanga or Region III
+
+qualifications:
+  - available for full-time (8 hours per day)
+  - strong willingness to learn and adapt
+  - able to work independently in a remote setup
+  - fast learner who can follow technical instructions
+  - good problem-solving and debugging skills
+  - attention to detail
+  - basic UI/UX awareness
+  - has a portfolio, GitHub account, or sample projects
+  - good time management and accountability
+
+work_focus:
+  - modern web app development projects
+  - AI-assisted development workflows
+  - real-world features, APIs, and integrations
+  - collaborative development using Git and modern tools
+
+editor_signals:
+  - Visual Studio Code
+  - VS Code
+  - Cursor
+
+ai_tools_signals:
+  - Cursor
+  - Claude Code
+  - ChatGPT
+  - Claude
+  - Copilot
+  - GitHub Copilot
+  - Gemini
+  - v0
+  - Bolt
+  - Lovable
+  - Replit Agent
+  - AI-assisted
+  - AI assisted
+  - vibe coding
+
+location:
+  country: Philippines
+  preferred_regions:
+    - Pampanga
+    - Region III
+    - Central Luzon
+    - Angeles City
+    - San Fernando
+    - Clark
+
+experience_tiers:
+  perfect:
+    min_years: 0
+    max_years: 2
+    label: "Junior / intern (≤2 years in tech) — ideal"
+  good:
+    min_years: 0
+    max_years: 0
+    label: "Fresh grad — equally strong when skills match"
+  auto_pass:
+    min_years: 2
+    label: "More than 2 years working in tech — auto pass"
+  # Count ALL tech-related employment (dev, CMS, tech support, IT intern).
+  # Non-tech roles (video editor, admin OJT) do not count toward the limit.
+
+honors_keywords:
+  - cum laude
+  - magna cum laude
+  - summa cum laude
+  - dean's list
+  - dean lister
+  - with honors
+  - high honors
+
+filipino_signals:
+  # Used as hints — agent must verify from CV/email, not name alone
+  schools:
+    - UP
+    - Ateneo
+    - La Salle
+    - UST
+    - PUP
+    - PLM
+    - CLSU
+    - Holy Angel University
+    - Don Honorio Ventura State University
+  location_keywords:
+    - Philippines
+    - PH
+    - Pampanga
+    - Region III
+    - Central Luzon
+    - Metro Manila
+    - NCR
+    - Cebu
+    - Davao
+
+soft_skills_priority:
+  - fast learner
+  - strong written English communication
+  - works independently in remote setup
+  - good problem-solving and debugging
+  - attention to detail
+  - basic UI/UX awareness
+  - good time management and accountability
+  - ships tasks consistently
+  - comfortable with AI-assisted development
+
+ranking:
+  top_n: 10
+  weights:
+    experience_tier: 17
+    tech_stack_match: 30
+    git_evidence: 15
+    education_honors: 15
+    ai_tool_usage: 15
+    location_bonus: 3

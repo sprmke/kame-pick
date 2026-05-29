@@ -1,0 +1,17 @@
+---
+description: Candidate analysis context when working with applicant data and reports
+globs: data/**/*
+alwaysApply: false
+---
+
+# Job Applicant Analysis
+
+When analyzing files under `data/`:
+
+1. Read `config/job-criteria.yaml` for tech stack and weights.
+2. Follow `.cursor/skills/analyze-job-candidates/SKILL.md` workflow.
+3. **Filipino only** — exclude non-PH candidates with documented reason.
+4. **Tier A:** ≤2 years junior dev. **Tier B:** fresh grad. **Auto-pass:** >2 years.
+5. Bonus: Pampanga, honors, tech match, Git/GitHub, AI-built web apps.
+6. Save rankings to `data/reports/` — never commit PII to git.
+7. Summarize candidates; do not dump full resume text in chat.

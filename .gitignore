@@ -1,0 +1,64 @@
+# --- Secrets & auth (never commit) ---
+.env
+.env.local
+.env.*.local
+credentials.json
+token.json
+token.pickle
+*.pem
+
+# Examples are safe to commit (listed explicitly so broad env rules never hide them)
+!.env.example
+
+# --- Local data (PII, sync state, recruiter DB) ---
+data/candidates/*
+!data/candidates/.gitkeep
+data/.sync-state.json
+data/app.db
+data/app.db-*
+data/reports/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# --- Node (root dev tools + Next.js app) ---
+node_modules/
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo
+web/*.tsbuildinfo
+
+# --- Logs & debug ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- IDE / editors ---
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Deploy ---
+.vercel
