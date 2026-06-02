@@ -156,3 +156,14 @@ cd web && npm run dev
 | Gmail Sync | Trigger fetch + PDF extract from the UI |
 
 Recruiter notes (status, stars, notes) are stored in `data/app.db` (local SQLite, gitignored).
+
+## Cloud full-stack migration
+
+The app is being extended into a multi-user web product **without removing** the local workflow above.
+
+- **Documentation:** [docs/README.md](./docs/README.md)
+- **Architecture & roadmap:** [docs/architecture.md](./docs/architecture.md), [docs/migration-roadmap.md](./docs/migration-roadmap.md)
+- **Phase 1 (auth):** Supabase login when `NEXT_PUBLIC_SUPABASE_*` env vars are set in `web/.env.local`
+- **SQL migration:** [supabase/migrations/20260530100000_foundation.sql](./supabase/migrations/20260530100000_foundation.sql)
+
+Local mode (no Supabase env vars) continues to work unchanged.
