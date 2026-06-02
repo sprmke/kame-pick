@@ -1,0 +1,28 @@
+---
+description: PII, secrets, and candidate data handling — always enforce
+alwaysApply: true
+---
+
+# Privacy & secrets
+
+## Never commit
+
+- `data/candidates/` (applicant PII)
+- `data/app.db`, `data/reports/`
+- `.env`, `.env.local`, `credentials.json`, `token.json`
+
+## In chat/responses
+
+- Summarize candidates — do not paste full resume text
+- Do not ask for Gmail passwords; OAuth only (see README)
+- Redact emails/phone numbers in examples unless the user explicitly needs them
+
+## In code
+
+- Keep PII reads scoped to `data/candidates/` services
+- Cloud storage must enforce org-scoped RLS + storage policies
+- Log messages should use candidate slug, not full email, in production paths
+
+## Git operations
+
+If asked to commit, verify staged files exclude the paths above. Refuse to commit secrets even if explicitly requested — warn the user instead.

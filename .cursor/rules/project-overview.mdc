@@ -1,0 +1,40 @@
+---
+description: Core project context — stack, layout, and dual local/cloud modes
+alwaysApply: true
+---
+
+# Job Applicants Analyzer
+
+Multi-tenant hiring tool evolving from a local Gmail + filesystem workflow into a Supabase-backed web app. **Both modes must keep working** until Phase 6 cleanup is explicitly approved.
+
+## Stack
+
+| Layer | Path | Tech |
+|-------|------|------|
+| Frontend | `web/` | Next.js 16, React 19, Tailwind 4 |
+| Backend | `server/` | FastAPI, Python 3.11+ |
+| Local DB | `data/app.db` | SQLite (notes, runs, sync jobs) |
+| Local files | `data/candidates/` | Emails, PDFs, manifest (PII — gitignored) |
+| Cloud auth/DB | `supabase/` | Supabase Auth + Postgres + RLS |
+| Config | `config/` | `job-criteria.yaml`, email templates |
+| Docs | `docs/` | Architecture, migration roadmap, module specs |
+
+## Operating modes
+
+- **Local mode (default):** No `NEXT_PUBLIC_SUPABASE_*` in `web/.env.local` → no auth gate, open API on localhost.
+- **Cloud mode:** Supabase env vars set → login required; cloud code lives in `server/cloud/` (phased in).
+
+## Dev commands
+
+```bash
+source .venv/bin/activate && npm run dev   # API :8000 + web :3000
+python scripts/fetch_emails.py --only-new  # sync Gmail
+python scripts/extract_resume_text.py        # PDF → text
+```
+
+## Key references
+
+- Architecture: `docs/architecture.md`
+- Migration phases: `docs/migration-roadmap.md`
+- Module specs: `docs/modules/`
+- Candidate analysis: `.cursor/skills/analyze-job-candidates/SKILL.md`

@@ -1,0 +1,34 @@
+---
+description: Next.js 16 and React conventions for the web app
+globs: web/**/*
+alwaysApply: false
+---
+
+# Web app conventions
+
+This project uses **Next.js 16** with breaking changes from earlier versions. Read `node_modules/next/dist/docs/` for current APIs before assuming patterns from training data.
+
+## Structure
+
+- App Router pages: `web/src/app/`
+- Shared components: `web/src/components/`
+- API client: `web/src/lib/api.ts` → FastAPI at `http://localhost:8000/api`
+- Supabase clients: `web/src/lib/supabase/` (client, server, middleware, config)
+
+## Supabase SSR
+
+- Browser: `createBrowserClient` in `client.ts`
+- Server Components / Route Handlers: `createServerClient` in `server.ts`
+- Session refresh: `middleware.ts` + `lib/supabase/middleware.ts`
+- Gate auth only when `isCloudMode` is true (env vars present)
+
+## UI patterns
+
+- Tailwind 4 via `globals.css` — no separate `tailwind.config.js`
+- shadcn-style primitives in `components/ui/` (card, badge)
+- Lucide icons for navigation
+- Keep existing page behavior working in **local mode** (no Supabase required)
+
+## API calls
+
+Use `lib/api.ts` typed helpers — do not scatter raw fetch URLs. Set `NEXT_PUBLIC_API_URL` only when API host differs from default.

@@ -1,0 +1,39 @@
+---
+description: FastAPI and Python service conventions
+globs: server/**,scripts/**
+alwaysApply: false
+---
+
+# Python server conventions
+
+## Layout
+
+| Path | Role |
+|------|------|
+| `server/main.py` | FastAPI app, CORS, lifespan |
+| `server/api/routes.py` | HTTP routes under `/api` |
+| `server/api/schemas.py` | Pydantic request/response models |
+| `server/db.py` | SQLite — **local mode only, do not rewrite for cloud** |
+| `server/services/` | Business logic (candidates, scoring, sync, gmail) |
+| `server/cloud/` | New cloud DB layer (Phase 2+) |
+| `scripts/` | CLI tools (fetch emails, extract PDFs) |
+
+## Patterns
+
+- Use `from __future__ import annotations` in new modules
+- Load env via `server.env.load_project_env()` — never hardcode secrets
+- Services return plain dicts or Pydantic models; routes stay thin
+- Scoring/filter logic lives in `services/scorer.py`, `services/ranking.py`, `services/filters.py` — extend there, don't duplicate in routes
+
+## Candidate data
+
+- Filesystem manifest: `data/candidates/manifest.json`
+- Per-candidate folder: `metadata.json`, `combined-email.txt`, `links.json`, `attachments/`, `extracted/`
+- Job criteria: `config/job-criteria.yaml`
+
+## Adding endpoints
+
+1. Schema in `api/schemas.py`
+2. Logic in appropriate `services/` module
+3. Route in `api/routes.py`
+4. TypeScript interface + helper in `web/src/lib/api.ts`

@@ -1,0 +1,18 @@
+---
+description: Preserve local workflow while adding cloud features — migration rules
+globs: server/**,web/**,supabase/**,docs/**
+alwaysApply: false
+---
+
+# Dual-mode migration rules
+
+From `docs/migration-roadmap.md`:
+
+1. **Do not remove** local implementations (`server/db.py`, `server/services/candidates.py`, Gmail CLI scripts) until Phase 6 is explicitly approved.
+2. **Add cloud code in new modules** — prefer `server/cloud/` over rewriting existing services.
+3. **Feature-flag by mode** — detect Supabase env vars (`web/src/lib/supabase/config.ts` → `isCloudMode`) and mirror the same concept server-side when wiring FastAPI auth.
+4. **Document each phase** in `docs/modules/` before or alongside implementation.
+5. **Parallel repositories** — cloud Postgres repos should mirror SQLite/filesystem APIs; routes delegate based on mode.
+6. **RLS on all tenant tables** — every cloud table gets `organization_id` + membership policy (see `supabase/migrations/`).
+
+When implementing a migration phase, read the matching module doc and update its changelog.

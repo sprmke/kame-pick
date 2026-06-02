@@ -1,0 +1,40 @@
+---
+description: Supabase SQL migrations, RLS, and multi-tenant schema rules
+globs: supabase/**/*
+alwaysApply: false
+---
+
+# Supabase migrations
+
+## File naming
+
+New migrations: `supabase/migrations/YYYYMMDDHHMMSS_description.sql`
+
+Apply via Supabase CLI (`supabase db push`) or dashboard SQL editor. Update the relevant `docs/modules/*.md` changelog.
+
+## Tenancy
+
+- Every tenant table includes `organization_id uuid not null references organizations(id)`
+- RLS enabled on all tenant tables
+- Standard policy pattern:
+
+```sql
+create policy "members can access org data"
+  on public.my_table for all
+  using (
+    organization_id in (
+      select organization_id from organization_members
+      where user_id = (select auth.uid())
+    )
+  );
+```
+
+## Auth triggers
+
+- Profile + default org created on signup via `on_auth_user_created` trigger (see foundation migration)
+- Never store service-role keys in frontend env vars
+
+## Storage (Phase 3+)
+
+- Bucket per org or path prefix: `{organization_id}/{candidate_slug}/`
+- Storage policies mirror Postgres RLS membership checks
