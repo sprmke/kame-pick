@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 from server.config import JOB_CRITERIA_PATH
-from server.services.candidates import get_combined_text_for_scoring, load_links, load_manifest
+from server.stores import candidates as candidate_store
 
 
 @dataclass
@@ -59,6 +59,12 @@ class ScoreBreakdown:
 
 
 def load_criteria() -> dict[str, Any]:
+    from server.stores.criteria import load_criteria as store_load_criteria
+
+    return store_load_criteria()
+
+
+def _load_criteria_from_file() -> dict[str, Any]:
     if not JOB_CRITERIA_PATH.exists():
         return {}
     return yaml.safe_load(JOB_CRITERIA_PATH.read_text(encoding="utf-8")) or {}
@@ -162,7 +168,7 @@ def _score_tech(text: str, criteria: dict) -> tuple[int, list[str], list[str]]:
 
 
 def _score_git(text: str, slug: str) -> tuple[int, str]:
-    links = load_links(slug)
+    links = candidate_store.load_links(slug)
     github = links.get("github", [])
     git_mentions = bool(re.search(r"\bgit\b|github|gitlab", text, re.I))
 
@@ -206,7 +212,7 @@ def _score_location(text: str, criteria: dict) -> tuple[int, list[str]]:
 def score_candidate(slug: str, criteria: dict | None = None) -> ScoreBreakdown:
     criteria = criteria or load_criteria()
     weights = criteria.get("ranking", {}).get("weights", {})
-    text = get_combined_text_for_scoring(slug)
+    text = candidate_store.get_combined_text_for_scoring(slug)
     breakdown = ScoreBreakdown()
 
     filipino_ok, fil_signals = _check_filipino(text, criteria)

@@ -12,15 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from server.config import JOB_CRITERIA_PATH, ROOT
-from server.db import (
-    insert_email_message,
-    list_email_messages,
-    list_emails_for_run,
-    slugs_with_sent_outbound,
-    upsert_candidate_note,
-)
 from server.env import load_project_env
-from server.services.candidates import candidate_dir, get_candidate_full, load_metadata
+from server.stores import candidates as candidate_store
+from server.stores import workflow as workflow_store
+from server.stores.context import get_current_context
 from server.services.gmail_client import (
     GmailNotConfiguredError,
     find_thread_id_for_candidate,
@@ -36,6 +31,14 @@ PLACEHOLDER_RE = re.compile(r"\{\{\s*(\w+)\s*\}\}")
 SHORTLIST_TEMPLATE_PATH = ROOT / "config" / "shortlist-email-template.txt"
 
 load_project_env()
+
+
+def _get_gmail_service():
+    ctx = get_current_context()
+    if ctx.is_cloud and ctx.user_id:
+        from server.cloud.gmail_oauth import get_gmail_service_for_user
+        return get_gmail_service_for_user(ctx.require_org(), ctx.user_id)
+    return get_gmail_service()
 
 
 def _utc_now() -> str:
@@ -93,7 +96,7 @@ def base_email_context() -> dict[str, str]:
 
 
 def candidate_email_context(slug: str) -> dict[str, str]:
-    data = get_candidate_full(slug) or {}
+    data = candidate_store.get_candidate_full(slug) or {}
     meta = data.get("metadata") or {}
     name = data.get("name") or meta.get("from_name") or slug
     email = data.get("email") or meta.get("from_email") or ""
@@ -134,7 +137,7 @@ def _append_outbound_to_disk(
     body_text: str,
     sent_at: str,
 ) -> None:
-    base = candidate_dir(slug)
+    base = candidate_store.candidate_dir(slug)
     emails_dir = base / "emails"
     emails_dir.mkdir(parents=True, exist_ok=True)
 
@@ -162,16 +165,16 @@ def _append_outbound_to_disk(
 
 
 def _load_inbound_from_disk(slug: str) -> list[dict[str, Any]]:
-    emails_dir = candidate_dir(slug) / "emails"
+    emails_dir = candidate_store.candidate_dir(slug) / "emails"
     if not emails_dir.exists():
         return []
 
-    meta = load_metadata(slug) or {}
+    meta = candidate_store.load_metadata(slug) or {}
     fallback_ts = _message_timestamp({"sent_at": meta.get("received_at")})
 
     outbound_ids = {
         m["gmail_message_id"]
-        for m in list_email_messages(slug)
+        for m in workflow_store.list_email_messages(slug)
         if m.get("gmail_message_id") and m.get("direction") == "outbound"
     }
 
@@ -234,7 +237,7 @@ def get_email_thread(
     *,
     analysis_run_id: int | None = None,
 ) -> dict[str, Any]:
-    db_messages = list_email_messages(slug, analysis_run_id=analysis_run_id)
+    db_messages = workflow_store.list_email_messages(slug, analysis_run_id=analysis_run_id)
     if analysis_run_id is None:
         inbound = _load_inbound_from_disk(slug)
         combined = inbound + db_messages
@@ -246,7 +249,7 @@ def get_email_thread(
             msg["sort_ts"] = _message_timestamp(msg)
 
     combined.sort(key=lambda m: (m.get("sort_ts", 0), str(m.get("id", ""))))
-    meta = load_metadata(slug) or {}
+    meta = candidate_store.load_metadata(slug) or {}
     has_outbound = any(m.get("direction") == "outbound" and m.get("status") == "sent" for m in combined)
     return {
         "slug": slug,
@@ -260,7 +263,7 @@ def get_email_thread(
 
 
 def get_run_email_activity(analysis_run_id: int) -> dict[str, Any]:
-    messages = list_emails_for_run(analysis_run_id)
+    messages = workflow_store.list_emails_for_run(analysis_run_id)
     by_slug: dict[str, list[dict[str, Any]]] = {}
     for msg in messages:
         by_slug.setdefault(msg["slug"], []).append(msg)
@@ -273,7 +276,7 @@ def get_run_email_activity(analysis_run_id: int) -> dict[str, Any]:
 
 
 def _resolve_thread_id(service, slug: str, candidate_email: str) -> str | None:
-    meta = load_metadata(slug) or {}
+    meta = candidate_store.load_metadata(slug) or {}
     if meta.get("gmail_thread_id"):
         return meta["gmail_thread_id"]
     message_ids = meta.get("message_ids") or []
@@ -298,7 +301,7 @@ def preview_candidate_email(
 
     subject_rendered = render_template(subject, ctx)
     body_rendered = render_template(body, ctx)
-    meta = load_metadata(slug) or {}
+    meta = candidate_store.load_metadata(slug) or {}
     if reply and meta.get("subject"):
         subject_rendered = normalize_subject_for_reply(subject_rendered)
 
@@ -326,12 +329,12 @@ def send_candidate_email(
     subject_rendered = render_template(subject, ctx)
     body_rendered = render_template(body, ctx)
 
-    meta = load_metadata(slug) or {}
+    meta = candidate_store.load_metadata(slug) or {}
     if reply and meta.get("subject"):
         subject_rendered = normalize_subject_for_reply(subject_rendered)
 
     try:
-        service = get_gmail_service()
+        service = _get_gmail_service()
     except GmailNotConfiguredError as exc:
         raise ValueError(str(exc)) from exc
 
@@ -370,13 +373,13 @@ def send_candidate_email(
                 body_text=body_rendered,
                 sent_at=sent_at,
             )
-            metadata_path = candidate_dir(slug) / "metadata.json"
+            metadata_path = candidate_store.candidate_dir(slug) / "metadata.json"
             if metadata_path.exists():
                 meta_data = json.loads(metadata_path.read_text(encoding="utf-8"))
                 meta_data["gmail_thread_id"] = gmail_thread_id
                 metadata_path.write_text(json.dumps(meta_data, indent=2), encoding="utf-8")
 
-        record = insert_email_message(
+        record = workflow_store.insert_email_message(
             slug=slug,
             direction="outbound",
             from_email=result["from_email"],
@@ -389,10 +392,10 @@ def send_candidate_email(
             analysis_run_id=analysis_run_id,
             status="sent",
         )
-        note = upsert_candidate_note(slug, status="shortlisted")
+        note = workflow_store.upsert_candidate_note(slug, status="shortlisted")
         return {"ok": True, "message": record, "note": note, "status_updated": True}
     except Exception as exc:  # noqa: BLE001
-        record = insert_email_message(
+        record = workflow_store.insert_email_message(
             slug=slug,
             direction="outbound",
             from_email="",
@@ -420,7 +423,7 @@ def send_batch_emails(
     sent = 0
     failed = 0
     skipped = 0
-    already_contacted = set(slugs_with_sent_outbound(slugs))
+    already_contacted = set(workflow_store.slugs_with_sent_outbound(slugs))
 
     for i, slug in enumerate(slugs):
         if slug in already_contacted:
@@ -463,8 +466,12 @@ def send_batch_emails(
 
 
 def gmail_send_ready() -> dict[str, Any]:
+    ctx = get_current_context()
+    if ctx.is_cloud and ctx.user_id:
+        from server.cloud.gmail_oauth import gmail_status
+        return gmail_status(ctx.require_org(), ctx.user_id)
     try:
-        service = get_gmail_service()
+        service = _get_gmail_service()
         from_email = service.users().getProfile(userId="me").execute().get("emailAddress", "")
         return {"ready": True, "from_email": from_email}
     except Exception as exc:  # noqa: BLE001

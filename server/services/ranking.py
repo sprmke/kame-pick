@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from server.db import list_all_notes
-from server.services.candidates import list_attachments
+from server.stores import workflow as workflow_store
+from server.stores import candidates as candidate_store
 from server.services.github import enrich_entries_with_github
 
 
@@ -14,7 +14,7 @@ def _default_note(slug: str) -> dict[str, Any]:
 
 
 def enrich_ranked_results(ranked: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    notes = list_all_notes()
+    notes = workflow_store.list_all_notes()
     for item in ranked:
         slug = item["slug"]
         item["note"] = notes.get(slug) or _default_note(slug)
@@ -24,7 +24,7 @@ def enrich_ranked_results(ranked: list[dict[str, Any]]) -> list[dict[str, Any]]:
         slug = item["slug"]
         pdfs = [
             a
-            for a in list_attachments(slug)
+            for a in candidate_store.list_attachments(slug)
             if a.get("exists")
             and (
                 a.get("mime_type") == "application/pdf"

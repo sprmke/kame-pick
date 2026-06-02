@@ -6,8 +6,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from server.db import get_github_cache_bulk
-from server.services.candidates import get_combined_text_for_scoring, load_links, load_manifest
+from server.stores import workflow as workflow_store
+from server.stores import candidates as candidate_store
 from server.services.github import username_from_urls
 from server.services.scorer import ScoreBreakdown, load_criteria, score_candidate
 
@@ -162,13 +162,13 @@ def _location_hits(text: str, criteria: dict) -> list[str]:
 def build_candidate_profile(entry: dict[str, Any], criteria: dict | None = None) -> CandidateProfile:
     criteria = criteria or load_criteria()
     slug = entry["slug"]
-    text = get_combined_text_for_scoring(slug)
+    text = candidate_store.get_combined_text_for_scoring(slug)
     breakdown = score_candidate(slug, criteria)
-    links = load_links(slug)
+    links = candidate_store.load_links(slug)
     user = username_from_urls(links.get("github", []) + entry.get("github_urls", []))
     repo_count = None
     if user:
-        cache = get_github_cache_bulk([user.lower()])
+        cache = workflow_store.get_github_cache_bulk([user.lower()])
         row = cache.get(user.lower())
         if row and not row.get("error"):
             repo_count = row.get("public_repos")
@@ -287,7 +287,7 @@ def profile_to_result(profile: CandidateProfile) -> dict[str, Any]:
 
 
 def rank_with_filters(cfg: RankFilterConfig) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    manifest = load_manifest()
+    manifest = candidate_store.load_manifest()
     criteria = load_criteria()
     total = len(manifest.get("candidates", []))
     matched: list[CandidateProfile] = []

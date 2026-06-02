@@ -8,7 +8,8 @@ import threading
 from pathlib import Path
 
 from server.config import ROOT, SCRIPTS_DIR
-from server.db import create_sync_job, finish_sync_job
+from server.stores import workflow as workflow_store
+from server.stores.context import get_current_context
 
 
 def _sanitize_output(text: str) -> str:
@@ -41,7 +42,11 @@ def _run_script(script_name: str, *args: str) -> tuple[int, str]:
 
 
 def run_fetch_emails(*, only_new: bool = True, force: bool = False) -> None:
-    job_id = create_sync_job("fetch_emails")
+    if get_current_context().is_cloud:
+        from server.cloud.gmail_sync import run_fetch_emails as cloud_fetch
+        cloud_fetch(only_new=only_new, force=force)
+        return
+    job_id = workflow_store.create_sync_job("fetch_emails")
     args: list[str] = []
     if only_new:
         args.append("--only-new")
@@ -52,15 +57,19 @@ def run_fetch_emails(*, only_new: bool = True, force: bool = False) -> None:
         try:
             code, output = _run_script("fetch_emails.py", *args)
             status = "success" if code == 0 else "error"
-            finish_sync_job(job_id, status, output or f"exit code {code}")
+            workflow_store.finish_sync_job(job_id, status, output or f"exit code {code}")
         except Exception as exc:  # noqa: BLE001
-            finish_sync_job(job_id, "error", str(exc))
+            workflow_store.finish_sync_job(job_id, "error", str(exc))
 
     threading.Thread(target=_task, daemon=True).start()
 
 
 def run_extract_resumes(*, slug: str | None = None) -> None:
-    job_id = create_sync_job("extract_resumes")
+    if get_current_context().is_cloud:
+        from server.cloud.gmail_sync import run_extract_resumes as cloud_extract
+        cloud_extract(slug=slug)
+        return
+    job_id = workflow_store.create_sync_job("extract_resumes")
     args: list[str] = []
     if slug:
         args.extend(["--slug", slug])
@@ -69,15 +78,19 @@ def run_extract_resumes(*, slug: str | None = None) -> None:
         try:
             code, output = _run_script("extract_resume_text.py", "--quiet", *args)
             status = "success" if code == 0 else "error"
-            finish_sync_job(job_id, status, output or f"exit code {code}")
+            workflow_store.finish_sync_job(job_id, status, output or f"exit code {code}")
         except Exception as exc:  # noqa: BLE001
-            finish_sync_job(job_id, "error", str(exc))
+            workflow_store.finish_sync_job(job_id, "error", str(exc))
 
     threading.Thread(target=_task, daemon=True).start()
 
 
 def run_full_sync(*, only_new: bool = True) -> None:
-    job_id = create_sync_job("full_sync")
+    if get_current_context().is_cloud:
+        from server.cloud.gmail_sync import run_full_sync as cloud_full
+        cloud_full(only_new=only_new)
+        return
+    job_id = workflow_store.create_sync_job("full_sync")
 
     def _task() -> None:
         try:
@@ -86,10 +99,10 @@ def run_full_sync(*, only_new: bool = True) -> None:
             code2, out2 = _run_script("extract_resume_text.py", "--quiet")
             combined = f"Fetch:\n{out1}\n\nExtract:\n{out2}"
             if code1 == 0 and code2 == 0:
-                finish_sync_job(job_id, "success", combined)
+                workflow_store.finish_sync_job(job_id, "success", combined)
             else:
-                finish_sync_job(job_id, "error", combined)
+                workflow_store.finish_sync_job(job_id, "error", combined)
         except Exception as exc:  # noqa: BLE001
-            finish_sync_job(job_id, "error", str(exc))
+            workflow_store.finish_sync_job(job_id, "error", str(exc))
 
     threading.Thread(target=_task, daemon=True).start()

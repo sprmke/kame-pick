@@ -21,8 +21,8 @@ from server.env import load_project_env
 
 load_project_env()
 
-from server.db import get_conn, get_github_cache_bulk, upsert_github_cache
-from server.services.candidates import load_manifest
+from server.stores import workflow as workflow_store
+from server.stores import candidates as candidate_store
 
 GITHUB_USER_RE = re.compile(
     r"github\.com/(?!orgs/)([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)",
@@ -216,7 +216,7 @@ def _activity_label(active_count: int, days_since: int | None) -> str:
 
 def get_github_profile(username: str, *, refresh: bool = False) -> dict[str, Any]:
     key = username.lower()
-    cache = get_github_cache_bulk([key]).get(key)
+    cache = workflow_store.get_github_cache_bulk([key]).get(key)
 
     if cache and not refresh:
         if cache.get("profile"):
@@ -231,7 +231,7 @@ def get_github_profile(username: str, *, refresh: bool = False) -> dict[str, Any
 
     profile, err = fetch_github_profile(username)
     public_repos = profile.get("public_repos") if profile else None
-    upsert_github_cache(username, public_repos=public_repos, error=err, profile=profile)
+    workflow_store.upsert_github_cache(username, public_repos=public_repos, error=err, profile=profile)
 
     if err and not profile:
         return {"username": username, "error": err, "from_cache": False}
@@ -239,7 +239,7 @@ def get_github_profile(username: str, *, refresh: bool = False) -> dict[str, Any
 
 
 def get_cached_repo_count(username: str) -> int | None:
-    row = get_github_cache_bulk([username]).get(username.lower())
+    row = workflow_store.get_github_cache_bulk([username]).get(username.lower())
     if not row:
         return None
     if row.get("error") and not row.get("profile"):
@@ -262,7 +262,7 @@ def refresh_stale_rate_limits(logins: list[str]) -> int:
         return 0
 
     keys = list({login.lower() for login in logins})
-    cache = get_github_cache_bulk(keys)
+    cache = workflow_store.get_github_cache_bulk(keys)
     refreshed = 0
 
     for login in logins:
@@ -271,7 +271,7 @@ def refresh_stale_rate_limits(logins: list[str]) -> int:
             continue
         profile, err = fetch_github_profile(login)
         public_repos = profile.get("public_repos") if profile else None
-        upsert_github_cache(login, public_repos=public_repos, error=err, profile=profile)
+        workflow_store.upsert_github_cache(login, public_repos=public_repos, error=err, profile=profile)
         refreshed += 1
 
     return refreshed
@@ -287,7 +287,7 @@ def enrich_entries_with_github(entries: list[dict[str, Any]]) -> None:
         if user:
             usernames.append(user.lower())
 
-    cache = get_github_cache_bulk(list(set(usernames)))
+    cache = workflow_store.get_github_cache_bulk(list(set(usernames)))
     for entry in entries:
         user = entry.get("github_username")
         if not user:
@@ -308,22 +308,37 @@ def enrich_entries_with_github(entries: list[dict[str, Any]]) -> None:
 
 
 def retry_all_stale_rate_limits() -> dict[str, Any]:
-    with get_conn() as conn:
-        rows = conn.execute(
+    from server.stores.context import get_current_context
+    ctx = get_current_context()
+    if ctx.is_cloud:
+        from server.cloud.pg import fetch_all
+        rows = fetch_all(
             """
             SELECT username FROM github_cache
             WHERE error IS NOT NULL
               AND lower(error) LIKE '%rate%'
-              AND (profile_json IS NULL OR profile_json = '')
+              AND (profile_json IS NULL OR profile_json = 'null'::jsonb)
             """
-        ).fetchall()
-    logins = [row[0] for row in rows]
+        )
+        logins = [row["username"] for row in rows]
+    else:
+        from server.db import get_conn
+        with get_conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT username FROM github_cache
+                WHERE error IS NOT NULL
+                  AND lower(error) LIKE '%rate%'
+                  AND (profile_json IS NULL OR profile_json = '')
+                """
+            ).fetchall()
+        logins = [row[0] for row in rows]
     refreshed = refresh_stale_rate_limits(logins)
     return {"stale_count": len(logins), "refreshed": refreshed}
 
 
 def refresh_github_stats(*, force: bool = False, slugs: list[str] | None = None) -> dict[str, Any]:
-    manifest = load_manifest()
+    manifest = candidate_store.load_manifest()
     entries = manifest.get("candidates", [])
     if slugs:
         slug_set = set(slugs)
@@ -335,7 +350,7 @@ def refresh_github_stats(*, force: bool = False, slugs: list[str] | None = None)
         if user:
             usernames[user.lower()] = user
 
-    cache = get_github_cache_bulk(list(usernames.keys()))
+    cache = workflow_store.get_github_cache_bulk(list(usernames.keys()))
     now = datetime.now(timezone.utc)
     to_fetch: list[str] = []
 
@@ -364,7 +379,7 @@ def refresh_github_stats(*, force: bool = False, slugs: list[str] | None = None)
             time.sleep(0.5 if _github_token() else 1.5)
         profile, err = fetch_github_profile(login)
         public_repos = profile.get("public_repos") if profile else None
-        upsert_github_cache(login, public_repos=public_repos, error=err, profile=profile)
+        workflow_store.upsert_github_cache(login, public_repos=public_repos, error=err, profile=profile)
         if err and not profile:
             errors += 1
         else:
