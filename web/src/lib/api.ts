@@ -1,10 +1,21 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
+function cloudAttachmentUrl(slug: string, filename: string): string {
+  return `/api/attachment/${encodeURIComponent(slug)}/${encodeURIComponent(filename)}`;
+}
+
+function isCloudApi(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const { getAuthHeaders } = await import("@/lib/api-auth");
+  const authHeaders = await getAuthHeaders();
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders,
       ...init?.headers,
     },
     cache: "no-store",
@@ -340,6 +351,22 @@ export const api = {
     request<{ slugs: string[] }>(
       `/emails/contacted-slugs?slugs=${encodeURIComponent(slugs.join(","))}`,
     ),
-  attachmentUrl: (slug: string, filename: string) =>
-    `${API_BASE}/candidates/${slug}/attachment/${encodeURIComponent(filename)}`,
+  attachmentUrl: (slug: string, filename: string) => {
+    if (isCloudApi()) {
+      return cloudAttachmentUrl(slug, filename);
+    }
+    return `${API_BASE}/candidates/${slug}/attachment/${encodeURIComponent(filename)}`;
+  },
+  orgMe: () =>
+    request<{
+      mode: string;
+      organization_id?: string;
+      email?: string;
+      org_role?: string;
+      organizations?: { id: string; name: string; slug: string; role: string }[];
+    }>("/org/me"),
+  gmailConnectUrl: () => request<{ url: string }>("/gmail/connect-url"),
+  gmailDisconnect: () =>
+    request<{ status: string }>("/gmail/disconnect", { method: "DELETE" }),
+  importLocal: () => request<{ imported: number; skipped: number; errors: string[] }>("/import/local", { method: "POST" }),
 };

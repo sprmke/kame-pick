@@ -7,9 +7,11 @@ import {
   FileText,
   LayoutDashboard,
   RefreshCw,
+  Settings,
   Sparkles,
   Users,
 } from "lucide-react";
+import { UserMenu } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -18,6 +20,7 @@ const links = [
   { href: "/analyze", label: "Rank & Analyze", icon: Sparkles },
   { href: "/reports", label: "Rankings", icon: FileText },
   { href: "/sync", label: "Gmail Sync", icon: RefreshCw },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -52,6 +55,7 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <UserMenu />
     </aside>
   );
 }
