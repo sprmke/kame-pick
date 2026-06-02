@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "Supabase": {
+      "url": "https://mcp.supabase.com/mcp",
+      "headers": {}
+    },
+    "context7": {
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {}
+    },
+    "shadcn/ui": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "Playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "Vercel": {
+      "url": "https://mcp.vercel.com",
+      "headers": {}
+    }
+  }
+}
