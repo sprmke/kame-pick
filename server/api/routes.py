@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 
 from server.api.schemas import (
     BatchEmailRequest,
@@ -17,22 +16,10 @@ from server.api.schemas import (
     SyncRequest,
 )
 from server.services.filters import RankFilterConfig, get_filter_options, preview_filters, rank_with_filters
-from server.config import CANDIDATES_DIR, JOB_CRITERIA_PATH, ROOT
-from server.db import (
-    get_analysis_run,
-    get_candidate_note,
-    get_latest_sync_job,
-    list_all_notes,
-    list_analysis_runs,
-    save_analysis_run,
-    slugs_with_sent_outbound,
-    upsert_candidate_note,
-)
-from server.services.candidates import (
-    candidate_dir,
-    get_candidate_full,
-    load_manifest,
-)
+from server.stores import candidates as candidate_store
+from server.stores import criteria as criteria_store
+from server.stores import workflow as workflow_store
+from server.stores.context import get_current_context
 from server.services.ranking import enrich_ranked_results
 from server.services.github import (
     enrich_entries_with_github,
@@ -44,7 +31,7 @@ from server.services.github import (
     retry_all_stale_rate_limits,
     username_from_urls,
 )
-from server.services.scorer import load_criteria, rank_all_candidates, score_candidate
+from server.services.scorer import rank_all_candidates, score_candidate
 from server.services.email_outreach import (
     get_default_email_template,
     get_email_thread,
@@ -66,9 +53,9 @@ def health() -> dict[str, str]:
 
 @router.get("/dashboard")
 def dashboard() -> dict[str, Any]:
-    manifest = load_manifest()
+    manifest = candidate_store.load_manifest()
     candidates = manifest.get("candidates", [])
-    notes = list_all_notes()
+    notes = workflow_store.list_all_notes()
     status_counts: dict[str, int] = {}
     starred = 0
     for n in notes.values():
@@ -86,10 +73,10 @@ def dashboard() -> dict[str, Any]:
         "manifest_updated_at": manifest.get("updated_at"),
         "status_counts": status_counts,
         "starred_count": starred,
-        "reports_count": len(list_analysis_runs()),
-        "analysis_runs_count": len(list_analysis_runs()),
-        "latest_sync": get_latest_sync_job(),
-        "role": load_criteria().get("role", "AI-Assisted Web Developer"),
+        "reports_count": len(workflow_store.list_analysis_runs()),
+        "analysis_runs_count": len(workflow_store.list_analysis_runs()),
+        "latest_sync": workflow_store.get_latest_sync_job(),
+        "role": criteria_store.load_criteria().get("role", "AI-Assisted Web Developer"),
     }
 
 
@@ -108,8 +95,8 @@ def list_candidates(
     page: int = Query(1, ge=1),
     per_page: int = Query(15, ge=1, le=50),
 ) -> dict[str, Any]:
-    manifest = load_manifest()
-    notes = list_all_notes()
+    manifest = candidate_store.load_manifest()
+    notes = workflow_store.list_all_notes()
     items: list[dict[str, Any]] = []
 
     for entry in manifest.get("candidates", []):
@@ -227,7 +214,7 @@ def github_refresh(body: GithubRefreshRequest | None = None) -> dict[str, Any]:
 
 @router.get("/candidates/{slug}/github-insights")
 def candidate_github_insights(slug: str, refresh: bool = False) -> dict[str, Any]:
-    data = get_candidate_full(slug)
+    data = candidate_store.get_candidate_full(slug)
     if not data:
         raise HTTPException(404, "Candidate not found")
     urls = data.get("links", {}).get("github", []) or data.get("github_urls", [])
@@ -252,14 +239,14 @@ def candidate_emails(
     slug: str,
     run_id: int | None = Query(None, alias="run_id"),
 ) -> dict[str, Any]:
-    if not get_candidate_full(slug):
+    if not candidate_store.get_candidate_full(slug):
         raise HTTPException(404, "Candidate not found")
     return get_email_thread(slug, analysis_run_id=run_id)
 
 
 @router.post("/candidates/{slug}/emails/preview")
 def preview_candidate_email_route(slug: str, body: SendEmailRequest) -> dict[str, Any]:
-    if not get_candidate_full(slug):
+    if not candidate_store.get_candidate_full(slug):
         raise HTTPException(404, "Candidate not found")
     try:
         return preview_candidate_email(
@@ -274,7 +261,7 @@ def preview_candidate_email_route(slug: str, body: SendEmailRequest) -> dict[str
 
 @router.post("/candidates/{slug}/emails")
 def send_candidate_email_route(slug: str, body: SendEmailRequest) -> dict[str, Any]:
-    if not get_candidate_full(slug):
+    if not candidate_store.get_candidate_full(slug):
         raise HTTPException(404, "Candidate not found")
     try:
         return send_candidate_email(
@@ -291,13 +278,13 @@ def send_candidate_email_route(slug: str, body: SendEmailRequest) -> dict[str, A
 @router.get("/emails/contacted-slugs")
 def contacted_slugs_route(slugs: str = Query("")) -> dict[str, Any]:
     slug_list = [s.strip() for s in slugs.split(",") if s.strip()]
-    return {"slugs": slugs_with_sent_outbound(slug_list)}
+    return {"slugs": workflow_store.slugs_with_sent_outbound(slug_list)}
 
 
 @router.post("/emails/batch")
 def send_batch_email_route(body: BatchEmailRequest) -> dict[str, Any]:
     for slug in body.slugs:
-        if not get_candidate_full(slug):
+        if not candidate_store.get_candidate_full(slug):
             raise HTTPException(400, f"Unknown candidate: {slug}")
     return send_batch_emails(
         body.slugs,
@@ -310,17 +297,17 @@ def send_batch_email_route(body: BatchEmailRequest) -> dict[str, Any]:
 
 @router.get("/analyze/runs/{run_id}/emails")
 def run_email_activity(run_id: int) -> dict[str, Any]:
-    if not get_analysis_run(run_id):
+    if not workflow_store.get_analysis_run(run_id):
         raise HTTPException(404, "Report not found")
     return get_run_email_activity(run_id)
 
 
 @router.get("/candidates/{slug}")
 def get_candidate(slug: str) -> dict[str, Any]:
-    data = get_candidate_full(slug)
+    data = candidate_store.get_candidate_full(slug)
     if not data:
         raise HTTPException(404, "Candidate not found")
-    data["note"] = get_candidate_note(slug) or {
+    data["note"] = workflow_store.get_candidate_note(slug) or {
         "slug": slug,
         "status": "new",
         "starred": False,
@@ -334,11 +321,9 @@ def get_candidate(slug: str) -> dict[str, Any]:
 
 @router.patch("/candidates/{slug}/note")
 def update_candidate_note(slug: str, body: CandidateNoteUpdate) -> dict[str, Any]:
-    if not (candidate_dir(slug) / "metadata.json").exists():
-        manifest = load_manifest()
-        if not any(c["slug"] == slug for c in manifest.get("candidates", [])):
-            raise HTTPException(404, "Candidate not found")
-    return upsert_candidate_note(
+    if not candidate_store.candidate_exists(slug):
+        raise HTTPException(404, "Candidate not found")
+    return workflow_store.upsert_candidate_note(
         slug,
         status=body.status,
         starred=body.starred,
@@ -348,16 +333,15 @@ def update_candidate_note(slug: str, body: CandidateNoteUpdate) -> dict[str, Any
 
 
 @router.get("/candidates/{slug}/attachment/{filename}")
-def download_attachment(slug: str, filename: str) -> FileResponse:
-    path = candidate_dir(slug) / "attachments" / filename
-    if not path.exists():
+def download_attachment(slug: str, filename: str) -> Response:
+    result = candidate_store.get_attachment_bytes(slug, filename)
+    if not result:
         raise HTTPException(404, "Attachment not found")
-    media_type = "application/pdf" if path.suffix.lower() == ".pdf" else None
-    return FileResponse(
-        path,
+    data, media_type = result
+    return Response(
+        content=data,
         media_type=media_type,
-        filename=filename,
-        content_disposition_type="inline",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
     )
 
 
@@ -382,7 +366,7 @@ def analyze_rank(body: RankRequest) -> dict[str, Any]:
     run_id = None
 
     if body.save_run:
-        run_id = save_analysis_run(body.report_name, filters, ranked)
+        run_id = workflow_store.save_analysis_run(body.report_name, filters, ranked)
 
     return {
         "ranked": ranked,
@@ -395,12 +379,12 @@ def analyze_rank(body: RankRequest) -> dict[str, Any]:
 
 @router.get("/analyze/runs")
 def analyze_runs() -> dict[str, Any]:
-    return {"runs": list_analysis_runs()}
+    return {"runs": workflow_store.list_analysis_runs()}
 
 
 @router.get("/analyze/runs/{run_id}")
 def analyze_run_detail(run_id: int) -> dict[str, Any]:
-    run = get_analysis_run(run_id)
+    run = workflow_store.get_analysis_run(run_id)
     if not run:
         raise HTTPException(404, "Run not found")
     run["results"] = enrich_ranked_results(run.get("results", []))
@@ -409,12 +393,12 @@ def analyze_run_detail(run_id: int) -> dict[str, Any]:
 
 @router.get("/reports")
 def reports_list() -> dict[str, Any]:
-    return {"reports": list_analysis_runs()}
+    return {"reports": workflow_store.list_analysis_runs()}
 
 
 @router.get("/reports/{run_id}")
 def reports_get(run_id: int) -> dict[str, Any]:
-    run = get_analysis_run(run_id)
+    run = workflow_store.get_analysis_run(run_id)
     if not run:
         raise HTTPException(404, "Report not found")
     run["results"] = enrich_ranked_results(run.get("results", []))
@@ -423,22 +407,17 @@ def reports_get(run_id: int) -> dict[str, Any]:
 
 @router.delete("/reports/{run_id}")
 def reports_delete(run_id: int) -> dict[str, str]:
-    from server.db import delete_analysis_run
-
-    if not delete_analysis_run(run_id):
+    if not workflow_store.delete_analysis_run(run_id):
         raise HTTPException(404, "Report not found")
     return {"status": "deleted"}
 
 
 @router.get("/settings/job-criteria")
 def get_job_criteria() -> dict[str, Any]:
-    if not JOB_CRITERIA_PATH.exists():
-        raise HTTPException(404, "job-criteria.yaml not found")
-    return {
-        "path": str(JOB_CRITERIA_PATH.relative_to(ROOT)),
-        "parsed": load_criteria(),
-        "raw": JOB_CRITERIA_PATH.read_text(encoding="utf-8"),
-    }
+    data = criteria_store.get_job_criteria_response()
+    if not data.get("raw") and not data.get("parsed"):
+        raise HTTPException(404, "job-criteria not found")
+    return data
 
 
 @router.put("/settings/job-criteria")
@@ -449,7 +428,7 @@ def put_job_criteria(body: JobCriteriaUpdate) -> dict[str, str]:
         yaml.safe_load(body.content)
     except yaml.YAMLError as exc:
         raise HTTPException(400, f"Invalid YAML: {exc}") from exc
-    JOB_CRITERIA_PATH.write_text(body.content, encoding="utf-8")
+    criteria_store.save_job_criteria(body.content)
     return {"status": "saved"}
 
 
@@ -474,8 +453,66 @@ def sync_full(body: SyncRequest) -> dict[str, Any]:
 @router.get("/sync/status")
 def sync_status() -> dict[str, Any]:
     return {
-        "fetch": get_latest_sync_job("fetch_emails"),
-        "extract": get_latest_sync_job("extract_resumes"),
-        "full": get_latest_sync_job("full_sync"),
-        "candidates_dir_exists": CANDIDATES_DIR.exists(),
+        "fetch": workflow_store.get_latest_sync_job("fetch_emails"),
+        "extract": workflow_store.get_latest_sync_job("extract_resumes"),
+        "full": workflow_store.get_latest_sync_job("full_sync"),
+        "candidates_dir_exists": candidate_store.candidates_dir_exists(),
     }
+
+
+@router.get("/org/me")
+def org_me() -> dict[str, Any]:
+    ctx = get_current_context()
+    if not ctx.is_cloud:
+        return {"mode": "local"}
+    from server.cloud.auth import list_user_organizations
+    orgs = list_user_organizations(ctx.user_id or "")
+    return {
+        "mode": "cloud",
+        "user_id": ctx.user_id,
+        "email": ctx.email,
+        "organization_id": ctx.organization_id,
+        "org_role": ctx.org_role,
+        "organizations": orgs,
+    }
+
+
+@router.get("/gmail/connect-url")
+def gmail_connect_url() -> dict[str, str]:
+    ctx = get_current_context()
+    if not ctx.is_cloud or not ctx.user_id:
+        raise HTTPException(400, "Cloud mode with authentication required")
+    from server.cloud.gmail_oauth import build_authorize_url, oauth_configured
+    if not oauth_configured():
+        raise HTTPException(503, "Google OAuth not configured on server")
+    url = build_authorize_url(ctx.require_org(), ctx.user_id)
+    return {"url": url}
+
+
+@router.get("/gmail/oauth/callback")
+def gmail_oauth_callback(code: str = "", state: str = "") -> dict[str, Any]:
+    if not code or not state:
+        raise HTTPException(400, "Missing code or state")
+    from server.cloud.gmail_oauth import exchange_code
+    return exchange_code(code, state)
+
+
+@router.delete("/gmail/disconnect")
+def gmail_disconnect() -> dict[str, str]:
+    ctx = get_current_context()
+    if not ctx.is_cloud or not ctx.user_id:
+        raise HTTPException(400, "Cloud mode required")
+    from server.cloud.gmail_oauth import delete_connection
+    delete_connection(ctx.require_org(), ctx.user_id)
+    return {"status": "disconnected"}
+
+
+@router.post("/import/local")
+def import_local_data() -> dict[str, Any]:
+    """Import local filesystem candidates into cloud (one-time migration)."""
+    ctx = get_current_context()
+    if not ctx.is_cloud:
+        raise HTTPException(400, "Cloud mode required")
+    from server.cloud.import_local import import_local_candidates
+    result = import_local_candidates(ctx.require_org())
+    return result
