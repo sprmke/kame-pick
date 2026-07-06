@@ -13,6 +13,78 @@ interface AuthFormProps {
   mode: AuthMode;
 }
 
+type AuthFields = {
+  email: string;
+  password: string;
+  fullName: string;
+  organizationName: string;
+};
+
+async function signUpUser(fields: AuthFields, next: string) {
+  const supabase = createClient();
+  const { error } = await supabase.auth.signUp({
+    email: fields.email,
+    password: fields.password,
+    options: {
+      data: {
+        full_name: fields.fullName || undefined,
+        organization_name: fields.organizationName || undefined,
+      },
+      emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
+  });
+  if (error) throw error;
+}
+
+async function signInUser(email: string, password: string) {
+  const supabase = createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+function SignupFields({
+  fullName,
+  organizationName,
+  onFullNameChange,
+  onOrganizationNameChange,
+}: {
+  fullName: string;
+  organizationName: string;
+  onFullNameChange: (value: string) => void;
+  onOrganizationNameChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <div>
+        <label htmlFor="fullName" className="mb-1 block text-sm font-medium">
+          Full name
+        </label>
+        <input
+          id="fullName"
+          type="text"
+          autoComplete="name"
+          value={fullName}
+          onChange={(e) => onFullNameChange(e.target.value)}
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+        />
+      </div>
+      <div>
+        <label htmlFor="organizationName" className="mb-1 block text-sm font-medium">
+          Organization name
+        </label>
+        <input
+          id="organizationName"
+          type="text"
+          value={organizationName}
+          onChange={(e) => onOrganizationNameChange(e.target.value)}
+          placeholder="Acme Hiring"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+        />
+      </div>
+    </>
+  );
+}
+
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,32 +113,15 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
 
     setLoading(true);
-    const supabase = createClient();
-
     try {
       if (isSignup) {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName || undefined,
-              organization_name: organizationName || undefined,
-            },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-          },
-        });
-        if (signUpError) throw signUpError;
+        await signUpUser({ email, password, fullName, organizationName }, next);
         setMessage("Account created. You can sign in now.");
         router.push(`/login?next=${encodeURIComponent(next)}`);
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (signInError) throw signInError;
+      await signInUser(email, password);
       router.push(next);
       router.refresh();
     } catch (err) {
@@ -83,42 +138,18 @@ export function AuthForm({ mode }: AuthFormProps) {
           {isSignup ? "Create account" : "Sign in"}
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          {isSignup
-            ? "Start your hiring workspace"
-            : "Access your applicants dashboard"}
+          {isSignup ? "Start your hiring workspace" : "Access your applicants dashboard"}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {isSignup && (
-          <>
-            <div>
-              <label htmlFor="fullName" className="mb-1 block text-sm font-medium">
-                Full name
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                autoComplete="name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-              />
-            </div>
-            <div>
-              <label htmlFor="organizationName" className="mb-1 block text-sm font-medium">
-                Organization name
-              </label>
-              <input
-                id="organizationName"
-                type="text"
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                placeholder="Acme Hiring"
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-              />
-            </div>
-          </>
+          <SignupFields
+            fullName={fullName}
+            organizationName={organizationName}
+            onFullNameChange={setFullName}
+            onOrganizationNameChange={setOrganizationName}
+          />
         )}
 
         <div>
