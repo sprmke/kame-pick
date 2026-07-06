@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -30,6 +30,62 @@ type Extracted = {
   content: string;
 };
 
+type ResumeTab = "pdf" | "text";
+
+function isPdfAttachment(attachment: Attachment): boolean {
+  return attachment.exists && (attachment.mime_type === "application/pdf" || attachment.filename.toLowerCase().endsWith(".pdf"));
+}
+
+function resolveInitialTab(pdfs: Attachment[], extracted: Extracted[]): ResumeTab {
+  if (!pdfs.length && extracted.length) return "text";
+  return "pdf";
+}
+
+function findExtractedForPdf(activePdf: string, extracted: Extracted[]): Extracted | undefined {
+  if (!activePdf || !extracted.length) return extracted[0];
+  const stem = activePdf.replace(/\.pdf$/i, "");
+  return extracted.find((entry) => entry.filename.startsWith(stem) || entry.filename.includes(stem)) ?? extracted[0];
+}
+
+function ResumeTabBar({
+  tab,
+  onTabChange,
+  hasPdf,
+  hasText,
+}: {
+  tab: ResumeTab;
+  onTabChange: (tab: ResumeTab) => void;
+  hasPdf: boolean;
+  hasText: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {hasPdf && (
+        <button
+          type="button"
+          onClick={() => onTabChange("pdf")}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+            tab === "pdf" ? "bg-indigo-600 text-white" : "border border-zinc-300 dark:border-zinc-700"
+          }`}
+        >
+          PDF view
+        </button>
+      )}
+      {hasText && (
+        <button
+          type="button"
+          onClick={() => onTabChange("text")}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+            tab === "text" ? "bg-indigo-600 text-white" : "border border-zinc-300 dark:border-zinc-700"
+          }`}
+        >
+          Extracted text
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ResumeSection({
   slug,
   attachments,
@@ -39,28 +95,18 @@ export function ResumeSection({
   attachments: Attachment[];
   extracted: Extracted[];
 }) {
-  const pdfs = useMemo(
-    () =>
-      attachments.filter(
-        (a) => a.exists && (a.mime_type === "application/pdf" || a.filename.toLowerCase().endsWith(".pdf")),
-      ),
-    [attachments],
+  const pdfs = useMemo(() => attachments.filter(isPdfAttachment), [attachments]);
+  const defaultPdf = pdfs[0]?.saved_as ?? "";
+  const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
+  const activePdf = selectedPdf ?? defaultPdf;
+  const [tab, setTab] = useState<ResumeTab>(() => resolveInitialTab(pdfs, extracted));
+  const effectiveTab =
+    tab === "text" && pdfs.length > 0 && extracted.length === 0 ? "pdf" : tab;
+
+  const activeExtracted = useMemo(
+    () => findExtractedForPdf(activePdf, extracted),
+    [activePdf, extracted],
   );
-
-  const [activePdf, setActivePdf] = useState("");
-  const [tab, setTab] = useState<"pdf" | "text">("pdf");
-
-  useEffect(() => {
-    if (pdfs.length && !activePdf) setActivePdf(pdfs[0].saved_as);
-    if (!pdfs.length && extracted.length) setTab("text");
-    else if (pdfs.length) setTab((t) => (t === "text" && !extracted.length ? "pdf" : t));
-  }, [pdfs, extracted.length, activePdf]);
-
-  const activeExtracted = useMemo(() => {
-    if (!activePdf || !extracted.length) return extracted[0];
-    const stem = activePdf.replace(/\.pdf$/i, "");
-    return extracted.find((e) => e.filename.startsWith(stem) || e.filename.includes(stem)) ?? extracted[0];
-  }, [activePdf, extracted]);
 
   if (!pdfs.length && !extracted.length) {
     return (
@@ -75,55 +121,37 @@ export function ResumeSection({
     <Card className="lg:col-span-2">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle>Resume</CardTitle>
-        <div className="flex flex-wrap gap-2">
-          {pdfs.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setTab("pdf")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                tab === "pdf"
-                  ? "bg-indigo-600 text-white"
-                  : "border border-zinc-300 dark:border-zinc-700"
-              }`}
-            >
-              PDF view
-            </button>
-          )}
-          {extracted.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setTab("text")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                tab === "text"
-                  ? "bg-indigo-600 text-white"
-                  : "border border-zinc-300 dark:border-zinc-700"
-              }`}
-            >
-              Extracted text
-            </button>
-          )}
-        </div>
+        <ResumeTabBar
+          tab={effectiveTab}
+          onTabChange={setTab}
+          hasPdf={pdfs.length > 0}
+          hasText={extracted.length > 0}
+        />
       </div>
 
-      {pdfs.length > 1 && tab === "pdf" && (
+      {pdfs.length > 1 && effectiveTab === "pdf" && (
         <select
           value={activePdf}
-          onChange={(e) => setActivePdf(e.target.value)}
+          onChange={(e) => setSelectedPdf(e.target.value)}
           className="mt-4 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
         >
-          {pdfs.map((p) => (
-            <option key={p.saved_as} value={p.saved_as}>
-              {p.filename}
+          {pdfs.map((pdf) => (
+            <option key={pdf.saved_as} value={pdf.saved_as}>
+              {pdf.filename}
             </option>
           ))}
         </select>
       )}
 
       <div className="mt-4">
-        {tab === "pdf" && activePdf && (
-          <PdfViewer slug={slug} savedAs={activePdf} title={pdfs.find((p) => p.saved_as === activePdf)?.filename ?? activePdf} />
+        {effectiveTab === "pdf" && activePdf && (
+          <PdfViewer
+            slug={slug}
+            savedAs={activePdf}
+            title={pdfs.find((pdf) => pdf.saved_as === activePdf)?.filename ?? activePdf}
+          />
         )}
-        {tab === "text" && activeExtracted && (
+        {effectiveTab === "text" && activeExtracted && (
           <>
             <p className="mb-2 text-xs text-zinc-500">
               {activeExtracted.filename} · {activeExtracted.chars.toLocaleString()} characters
@@ -137,15 +165,15 @@ export function ResumeSection({
 
       {pdfs.length > 0 && (
         <ul className="mt-4 flex flex-wrap gap-3 border-t border-zinc-100 pt-4 text-sm dark:border-zinc-800">
-          {pdfs.map((att) => (
-            <li key={att.saved_as}>
+          {pdfs.map((attachment) => (
+            <li key={attachment.saved_as}>
               <a
-                href={api.attachmentUrl(slug, att.saved_as)}
+                href={api.attachmentUrl(slug, attachment.saved_as)}
                 target="_blank"
                 rel="noreferrer"
                 className="text-indigo-600 hover:underline"
               >
-                Download {att.filename}
+                Download {attachment.filename}
               </a>
             </li>
           ))}
