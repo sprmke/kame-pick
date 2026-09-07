@@ -27,7 +27,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export interface Dashboard {
+interface Dashboard {
   total_candidates: number;
   with_github: number;
   with_attachments: number;
@@ -135,7 +135,7 @@ export interface GitHubInsights {
   error?: string;
 }
 
-export interface RankingRun {
+interface RankingRun {
   id: number;
   name: string;
   filter: Record<string, unknown>;
@@ -171,7 +171,7 @@ export interface EmailThread {
   messages: EmailMessage[];
 }
 
-export interface CandidateDetail extends CandidateListItem {
+interface CandidateDetail extends CandidateListItem {
   metadata: Record<string, unknown>;
   links: {
     all: string[];

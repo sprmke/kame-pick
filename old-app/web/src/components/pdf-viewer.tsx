@@ -10,7 +10,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-export function pdfProxyUrl(slug: string, savedAs: string) {
+function pdfProxyUrl(slug: string, savedAs: string) {
   return `/pdf-proxy/${encodeURIComponent(slug)}/${encodeURIComponent(savedAs)}`;
 }
 

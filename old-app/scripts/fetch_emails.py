@@ -19,10 +19,11 @@ from dotenv import load_dotenv
 from googleapiclient.errors import HttpError
 
 ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = ROOT.parent
 sys.path.insert(0, str(ROOT))
 
 from server.services.gmail_client import get_gmail_service  # noqa: E402
-DATA_DIR = ROOT / "data"
+DATA_DIR = REPO_ROOT / "data"
 CANDIDATES_DIR = DATA_DIR / "candidates"
 SYNC_STATE_PATH = DATA_DIR / ".sync-state.json"
 

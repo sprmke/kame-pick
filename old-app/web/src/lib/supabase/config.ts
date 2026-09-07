@@ -23,7 +23,7 @@ export function getSupabaseAnonKey(): string {
 }
 
 /** Routes that skip auth middleware in cloud mode. */
-export const PUBLIC_ROUTES = ["/login", "/signup", "/auth/callback", "/auth/signout"];
+const PUBLIC_ROUTES = ["/login", "/signup", "/auth/callback", "/auth/signout"];
 
 export function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some(

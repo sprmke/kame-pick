@@ -11,7 +11,7 @@ from pathlib import Path
 import pdfplumber
 
 ROOT = Path(__file__).resolve().parent.parent
-CANDIDATES_DIR = ROOT / "data" / "candidates"
+CANDIDATES_DIR = ROOT.parent / "data" / "candidates"
 
 # Benign pdfminer/pypdf noise on some resume fonts — does not affect extracted text.
 for _logger in ("pdfminer", "pdfplumber", "PIL"):

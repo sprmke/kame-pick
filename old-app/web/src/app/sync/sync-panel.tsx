@@ -5,6 +5,19 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { api, type SyncJob } from "@/lib/api";
 
 type SyncStatus = Awaited<ReturnType<typeof api.syncStatus>> | null;
+type SyncAction = "fetch" | "extract" | "full";
+
+const SYNC_ACTIONS: { action: SyncAction; label: string; primary?: boolean }[] = [
+  { action: "full", label: "Full sync (fetch + extract)", primary: true },
+  { action: "fetch", label: "Fetch emails only" },
+  { action: "extract", label: "Extract PDFs only" },
+];
+
+function jobStatusClass(status: string): string {
+  if (status === "success") return "text-emerald-600";
+  if (status === "running") return "text-amber-600";
+  return "text-red-600";
+}
 
 function JobStatus({ label, job }: { label: string; job: SyncJob | null }) {
   if (!job) {
@@ -15,22 +28,12 @@ function JobStatus({ label, job }: { label: string; job: SyncJob | null }) {
       </div>
     );
   }
+
   return (
     <div className="rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800">
       <p className="font-medium">{label}</p>
       <p className="mt-1 capitalize">
-        Status:{" "}
-        <span
-          className={
-            job.status === "success"
-              ? "text-emerald-600"
-              : job.status === "running"
-                ? "text-amber-600"
-                : "text-red-600"
-          }
-        >
-          {job.status}
-        </span>
+        Status: <span className={jobStatusClass(job.status)}>{job.status}</span>
       </p>
       <p className="text-xs text-zinc-500">
         Started {new Date(job.started_at).toLocaleString()}
@@ -43,6 +46,18 @@ function JobStatus({ label, job }: { label: string; job: SyncJob | null }) {
       )}
     </div>
   );
+}
+
+async function startSyncAction(action: SyncAction): Promise<void> {
+  if (action === "fetch") {
+    await api.syncFetch(true, false);
+    return;
+  }
+  if (action === "extract") {
+    await api.syncExtract();
+    return;
+  }
+  await api.syncFull(true);
 }
 
 export function SyncPanel({ initialStatus }: { initialStatus: SyncStatus }) {
@@ -63,13 +78,11 @@ export function SyncPanel({ initialStatus }: { initialStatus: SyncStatus }) {
     return () => clearInterval(id);
   }, [refresh]);
 
-  async function run(action: "fetch" | "extract" | "full") {
+  async function run(action: SyncAction) {
     setBusy(true);
     setMessage("");
     try {
-      if (action === "fetch") await api.syncFetch(true, false);
-      else if (action === "extract") await api.syncExtract();
-      else await api.syncFull(true);
+      await startSyncAction(action);
       setMessage(`${action} started — polling status…`);
       await refresh();
     } catch (e) {
@@ -84,30 +97,21 @@ export function SyncPanel({ initialStatus }: { initialStatus: SyncStatus }) {
       <Card>
         <CardTitle>Actions</CardTitle>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => run("full")}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            Full sync (fetch + extract)
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => run("fetch")}
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-          >
-            Fetch emails only
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => run("extract")}
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
-          >
-            Extract PDFs only
-          </button>
+          {SYNC_ACTIONS.map(({ action, label, primary }) => (
+            <button
+              key={action}
+              type="button"
+              disabled={busy}
+              onClick={() => run(action)}
+              className={
+                primary
+                  ? "rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                  : "rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
+              }
+            >
+              {label}
+            </button>
+          ))}
         </div>
         {message && <p className="mt-3 text-sm text-zinc-600">{message}</p>}
         {status?.extract?.status === "success" && !status?.fetch && (
