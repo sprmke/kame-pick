@@ -7,7 +7,6 @@ token.json
 token.pickle
 *.pem
 
-# Examples are safe to commit (listed explicitly so broad env rules never hide them)
 !.env.example
 
 # --- Local data (PII, sync state, recruiter DB) ---
@@ -18,7 +17,27 @@ data/app.db
 data/app.db-*
 data/reports/
 
-# --- Python ---
+# --- Node / TanStack Start ---
+node_modules/
+.output/
+.nitro
+.tanstack
+.wrangler
+.vinxi
+dist/
+dist-ssr/
+__unconfig*
+todos.json
+*.local
+
+# --- Legacy stack (old-app/) ---
+old-app/node_modules/
+old-app/web/node_modules/
+old-app/web/.next/
+old-app/web/out/
+old-app/web/.turbo
+
+# --- Python (legacy local scripts in old-app/) ---
 __pycache__/
 *.py[cod]
 *$py.class
@@ -32,16 +51,6 @@ venv/
 .coverage
 htmlcov/
 *.egg-info/
-dist/
-build/
-
-# --- Node (root dev tools + Next.js app) ---
-node_modules/
-web/node_modules/
-web/.next/
-web/out/
-web/.turbo
-web/*.tsbuildinfo
 
 # --- Logs & debug ---
 *.log
@@ -62,3 +71,7 @@ Thumbs.db
 
 # --- Deploy ---
 .vercel
+
+# --- Tool caches ---
+.fallow/
+Library/

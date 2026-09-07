@@ -1,14 +1,53 @@
 {
   "name": "job-applicants-analyzer",
   "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:api": ".venv/bin/python -m uvicorn server.main:app --reload --host 127.0.0.1 --port 8000",
-    "dev:web": "cd web && npm run dev",
-    "install:all": "python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-server.txt && cd web && npm install",
-    "build:web": "cd web && npm run build"
+    "dev": "vite dev --port 3000",
+    "generate-routes": "tsr generate",
+    "build": "vite build",
+    "preview": "vite preview",
+    "migrate:local": "bun --env-file=.env.local scripts/migrate-local-data.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.6",
+    "@supabase/supabase-js": "^2.115.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-devtools": "latest",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-router-devtools": "latest",
+    "@tanstack/react-start": "latest",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "googleapis": "^178.0.0",
+    "lucide-react": "^1.41.0",
+    "nitro": "3.0.260610-beta",
+    "pdfjs-dist": "^6.3.289",
+    "postgres": "^3.4.9",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-pdf": "^10.5.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.1.18",
+    "yaml": "^2.9.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@tailwindcss/typography": "^0.5.16",
+    "@tanstack/devtools-vite": "latest",
+    "@tanstack/router-cli": "^1.132.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/yaml": "^1.9.7",
+    "@vitejs/plugin-react": "^6.0.1",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.0"
   }
 }
