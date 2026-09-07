@@ -1,4 +1,4 @@
-# Applicants Analyzer
+# Kame Pick
 
 Full-stack hiring dashboard built with **Bun**, **TanStack Start**, **Supabase (Postgres + Auth + Storage)**, and **Drizzle ORM**. Deploys to **Vercel** as a single app.
 

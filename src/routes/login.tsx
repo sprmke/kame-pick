@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { APP_NAME } from '#/lib/brand'
 import { createBrowserSupabase } from '#/lib/supabase/client'
 
 export const Route = createFileRoute('/login')({
@@ -33,7 +34,7 @@ function LoginPage() {
     <div className="w-full max-w-md space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold">Sign in</h1>
-        <p className="mt-1 text-sm text-zinc-500">Applicants Analyzer</p>
+        <p className="mt-1 text-sm text-zinc-500">{APP_NAME}</p>
       </div>
       <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         {error && <p className="text-sm text-red-600">{error}</p>}

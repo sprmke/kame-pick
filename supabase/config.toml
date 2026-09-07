@@ -1,7 +1,7 @@
 # Supabase local development (optional)
 # See: https://supabase.com/docs/guides/cli
 
-project_id = "job-applicants-analyzer"
+project_id = "kame-pick"
 
 [api]
 enabled = true

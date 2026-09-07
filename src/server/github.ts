@@ -1,4 +1,5 @@
 import type { GitHubInsights } from '#/lib/types'
+import { APP_SLUG } from '#/lib/brand'
 import { getGithubCacheBulk, upsertGithubCache } from '#/server/workflow'
 
 const GITHUB_USER_RE =
@@ -30,7 +31,7 @@ function githubToken(): string | null {
 async function githubRequest(url: string): Promise<[Record<string, unknown> | null, string | null]> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
-    'User-Agent': 'job-applicants-analyzer',
+    'User-Agent': APP_SLUG,
     'X-GitHub-Api-Version': '2022-11-28',
   }
   const token = githubToken()

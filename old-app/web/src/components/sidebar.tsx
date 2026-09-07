@@ -31,8 +31,8 @@ export function Sidebar() {
       <div className="flex items-center gap-2 border-b border-zinc-200 px-5 py-5 dark:border-zinc-800">
         <BarChart3 className="h-6 w-6 text-indigo-600" />
         <div>
-          <p className="text-sm font-bold">Applicants Analyzer</p>
-          <p className="text-xs text-zinc-500">Hiring dashboard</p>
+          <p className="text-sm font-bold">Kame Pick</p>
+          <p className="text-xs text-zinc-500">Pick your next hire</p>
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">

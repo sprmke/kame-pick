@@ -1,8 +1,8 @@
-# Job Applicants Analyzer — Legacy Stack
+# Kame Pick — Legacy Stack
 
 > **Archived.** The active app is at the repo root (TanStack Start + Bun). This folder preserves the original Next.js + FastAPI local/cloud workflow.
 
-# Job Applicants Analyzer
+# Kame Pick
 
 Fetch job applicant emails from Gmail, save resumes/links locally, and use Cursor AI to rank Filipino junior dev candidates.
 

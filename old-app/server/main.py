@@ -1,4 +1,4 @@
-"""FastAPI entrypoint for Job Applicants Analyzer web UI."""
+"""FastAPI entrypoint for Kame Pick web UI."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="Job Applicants Analyzer API",
+    title="Kame Pick API",
     version="1.0.0",
     lifespan=lifespan,
 )

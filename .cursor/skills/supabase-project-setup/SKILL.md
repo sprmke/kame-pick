@@ -1,7 +1,7 @@
 ---
 name: supabase-project-setup
 description: >-
-  Sets up Supabase for Job Applicants Analyzer cloud mode — project creation,
+  Sets up Supabase for Kame Pick cloud mode — project creation,
   env vars, migration apply, and OAuth. Use when configuring Supabase, enabling
   cloud auth, applying SQL migrations, or debugging login issues.
 ---

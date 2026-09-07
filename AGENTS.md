@@ -1,6 +1,6 @@
 # Agent instructions
 
-Job Applicants Analyzer — TanStack Start + Supabase cloud app.
+Kame Pick — TanStack Start + Supabase cloud app.
 
 ## Before making changes
 

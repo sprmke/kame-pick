@@ -1,7 +1,7 @@
 ---
 name: local-dev-workflow
 description: >-
-  Runs the Job Applicants Analyzer locally — web, API, Gmail sync, and PDF
+  Runs Kame Pick locally — web, API, Gmail sync, and PDF
   extraction. Use when starting dev servers, syncing applicants, setting up
   the project, or troubleshooting local mode.
 ---

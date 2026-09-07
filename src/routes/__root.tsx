@@ -2,6 +2,7 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-r
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { AppShell } from '#/components/app-shell'
+import { APP_NAME } from '#/lib/brand'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -9,7 +10,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Applicants Analyzer' },
+      { title: APP_NAME },
     ],
     links: [{ rel: 'stylesheet', href: appCss }],
   }),

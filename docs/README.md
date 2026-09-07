@@ -1,4 +1,4 @@
-# Job Applicants Analyzer — App Documentation
+# Kame Pick — App Documentation
 
 Documentation for the **cloud full-stack** migration. The original local workflow (Gmail scripts, `data/candidates/`, SQLite) remains supported and is **not removed** during this work.
 

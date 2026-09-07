@@ -2,7 +2,7 @@
 
 ## Overview
 
-Job Applicants Analyzer is evolving from a **single-user local tool** into a **multi-tenant web application** while keeping the original implementation intact until the cloud path is finalized.
+Kame Pick is evolving from a **single-user local tool** into a **multi-tenant web application** while keeping the original implementation intact until the cloud path is finalized.
 
 ```mermaid
 flowchart TB

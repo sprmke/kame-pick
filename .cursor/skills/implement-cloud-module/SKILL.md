@@ -1,7 +1,7 @@
 ---
 name: implement-cloud-module
 description: >-
-  Implements a phased cloud migration module for Job Applicants Analyzer.
+  Implements a phased cloud migration module for Kame Pick.
   Use when building Supabase features, server/cloud/ code, Phase 2–5 work,
   multi-tenant Postgres, or extending auth beyond login/signup.
 ---

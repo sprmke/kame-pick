@@ -1,10 +1,8 @@
+import { useEffect, useState } from 'react';
+import { api, type CandidateNote } from '#/lib/api';
+import { cn } from '#/lib/utils';
 
-
-import { useEffect, useState } from "react";
-import { api, type CandidateNote } from "#/lib/api";
-import { cn } from "#/lib/utils";
-
-const STATUSES = ["new", "shortlisted", "interview", "rejected", "hired"];
+const STATUSES = ['new', 'shortlisted', 'interview', 'rejected', 'hired'];
 
 export function CandidateActions({
   slug,
@@ -17,7 +15,7 @@ export function CandidateActions({
 }) {
   const [note, setNote] = useState(initialNote);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     setNote(initialNote);
@@ -25,13 +23,13 @@ export function CandidateActions({
 
   async function save(updates: Partial<CandidateNote>) {
     setSaving(true);
-    setMessage("");
+    setMessage('');
     try {
       const updated = await api.updateNote(slug, updates);
       setNote(updated);
-      setMessage("Saved");
+      setMessage('Saved');
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Save failed");
+      setMessage(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -40,12 +38,14 @@ export function CandidateActions({
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900",
+        'flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900',
         className,
       )}
     >
       <h3 className="text-lg font-semibold">Pipeline status</h3>
-      <label className="mt-4 block text-sm font-medium text-zinc-500">Status</label>
+      <label className="mt-4 block text-sm font-medium text-zinc-500">
+        Status
+      </label>
       <select
         value={note.status}
         onChange={(e) => save({ status: e.target.value })}
@@ -65,7 +65,7 @@ export function CandidateActions({
         disabled={saving}
         className="mt-3 w-full rounded-lg border border-amber-300 px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-950/30"
       >
-        {note.starred ? "★ Starred — click to unstar" : "☆ Star candidate"}
+        {note.starred ? '★ Starred — click to unstar' : '☆ Star candidate'}
       </button>
 
       <label className="mt-4 block text-sm font-medium">Recruiter notes</label>
@@ -82,7 +82,7 @@ export function CandidateActions({
         disabled={saving}
         className="mt-2 w-full rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
       >
-        {saving ? "Saving…" : "Save notes"}
+        {saving ? 'Saving…' : 'Save notes'}
       </button>
       {message && <p className="mt-2 text-xs text-zinc-500">{message}</p>}
     </div>

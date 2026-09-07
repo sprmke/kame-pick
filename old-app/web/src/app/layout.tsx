@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Job Applicants Analyzer",
+  title: "Kame Pick",
   description: "Rank and manage junior developer job applicants",
 };
 

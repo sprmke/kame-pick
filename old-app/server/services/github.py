@@ -81,7 +81,7 @@ def github_api_status() -> dict[str, Any]:
 def _github_request(url: str) -> tuple[Any | None, str | None]:
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "job-applicants-analyzer",
+        "User-Agent": "kame-pick",
         "X-GitHub-Api-Version": "2022-11-28",
     }
     token = _github_token()

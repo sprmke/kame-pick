@@ -1,5 +1,5 @@
 {
-  "name": "job-applicants-analyzer",
+  "name": "kame-pick",
   "private": true,
   "type": "module",
   "imports": {

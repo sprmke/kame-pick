@@ -3,7 +3,7 @@ description: Core project context — stack, layout, and repo structure
 alwaysApply: true
 ---
 
-# Job Applicants Analyzer
+# Kame Pick
 
 Multi-tenant hiring tool on **TanStack Start + Supabase**. Legacy Next.js + FastAPI stack archived in `old-app/`.
 

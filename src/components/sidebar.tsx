@@ -1,5 +1,6 @@
 import { BarChart3, FileText, LayoutDashboard, RefreshCw, Settings, Sparkles, Users } from 'lucide-react'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { APP_NAME, APP_TAGLINE } from '#/lib/brand'
 import { cn } from '#/lib/utils'
 import { UserMenu } from '#/components/user-menu'
 
@@ -20,8 +21,8 @@ export function Sidebar() {
       <div className="flex items-center gap-2 border-b border-zinc-200 px-5 py-5 dark:border-zinc-800">
         <BarChart3 className="h-6 w-6 text-indigo-600" />
         <div>
-          <p className="text-sm font-bold">Applicants Analyzer</p>
-          <p className="text-xs text-zinc-500">Hiring dashboard</p>
+          <p className="text-sm font-bold">{APP_NAME}</p>
+          <p className="text-xs text-zinc-500">{APP_TAGLINE}</p>
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">

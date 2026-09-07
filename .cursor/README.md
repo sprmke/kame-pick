@@ -1,6 +1,6 @@
 # Cursor tooling
 
-Project-specific AI configuration for Job Applicants Analyzer.
+Project-specific AI configuration for Kame Pick.
 
 ## Rules (`.cursor/rules/`)
 
