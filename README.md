@@ -1,169 +1,107 @@
-# Job Applicants Analyzer
+# Applicants Analyzer
 
-Fetch job applicant emails from Gmail, save resumes/links locally, and use Cursor AI to rank Filipino junior dev candidates.
+Full-stack hiring dashboard built with **Bun**, **TanStack Start**, **Supabase (Postgres + Auth + Storage)**, and **Drizzle ORM**. Deploys to **Vercel** as a single app.
+
+The previous Next.js + FastAPI stack is preserved in [`old-app/`](old-app/) for reference.
+
+## Stack
+
+| Layer | Technology |
+|-------|------------|
+| Runtime / package manager | Bun |
+| Full-stack framework | TanStack Start + TanStack Router |
+| UI | React 19, Tailwind 4 |
+| Database | Supabase Postgres |
+| ORM | Drizzle |
+| Auth & file storage | Supabase Auth + Storage |
+| Hosting | Vercel (Nitro preset) |
 
 ## Quick start
 
-### 1. Install
+### 1. Supabase
+
+1. Create a [Supabase](https://supabase.com) project.
+2. Apply migrations:
+
+   ```bash
+   cd supabase
+   supabase db push
+   # or run each file from supabase/migrations/ in the SQL editor
+   ```
+
+3. Copy API keys to `.env.local` (see `.env.example`).
+
+### 2. Local dev
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
+cp .env.example .env.local
+# Fill: DATABASE_URL, SUPABASE_*, VITE_SUPABASE_*
+
+bun install
+bun run dev
 ```
 
-### 2. Gmail OAuth setup (one-time)
+Open [http://localhost:3000](http://localhost:3000) → sign up → dashboard.
 
-Do **not** share your Gmail password in chat. Use Google OAuth:
+### 3. Migrate existing local data
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project → **APIs & Services** → **Enable APIs** → enable **Gmail API**
-3. **OAuth consent screen** → External → add your email as test user
-4. **Credentials** → **Create credentials** → **OAuth client ID** → **Desktop app**
-5. Download JSON → save as `credentials.json` in this project root
-6. (Recommended) In Gmail, create label `job-applicants` and filter applicant emails to it
+After signup, copy your **organization UUID** from Supabase into `.env.local`:
 
-Edit `.env`:
-
-```env
-GMAIL_QUERY=label:job-applicants
-# or: subject:(application OR resume OR portfolio) has:attachment
+```
+ORGANIZATION_ID=your-org-uuid
+LOCAL_DATA_DIR=./data
 ```
 
-### 3. Fetch emails
-
-First run opens browser for Google sign-in:
+Then run:
 
 ```bash
-python scripts/fetch_emails.py
-python scripts/extract_resume_text.py
+bun run migrate:local
 ```
 
-Incremental sync (new applicants only):
+Imports `data/candidates/`, `data/app.db` notes/runs, and PDFs into Supabase Storage.
 
-```bash
-python scripts/fetch_emails.py --only-new
-python scripts/extract_resume_text.py
-```
+## Deploy to Vercel
 
-### 4. Analyze with Cursor
+1. Connect this repo — **Root Directory** is the repo root (no subdirectory).
+2. Framework: **TanStack Start** (via `vercel.json`).
+3. Set env vars from `.env.example` (including `VITE_SUPABASE_*`).
+4. Gmail redirect: `https://your-app.vercel.app/api/gmail/callback`
+5. Supabase Auth redirect: `https://your-app.vercel.app/auth/callback`
 
-In chat, say:
-
-> Use the analyze-job-candidates skill and rank my top 10 applicants.
-
-Or invoke: **analyze-job-candidates**
-
-The agent reads `data/candidates/`, checks CVs, GitHub links, and writes `data/reports/ranking-*.md`.
-
-## Folder layout
+## Project structure
 
 ```
-data/candidates/
-  manifest.json              # index of all applicants
-  juan-delacruz-at-gmail-com/
-    metadata.json            # sender, links, attachment list
-    combined-email.txt       # all email text
-    links.json               # GitHub, portfolio URLs
-    attachments/             # PDFs, etc.
-    extracted/               # PDF text for AI
+├── config/           # job-criteria.yaml, email templates
+├── data/             # local candidate PII (gitignored)
+├── docs/             # architecture & migration notes
+├── old-app/          # legacy Next.js + FastAPI stack
+├── scripts/          # migrate-local-data.ts
+├── src/
+│   ├── db/           # Drizzle schema
+│   ├── server/       # business logic + server functions
+│   ├── components/   # UI
+│   └── routes/       # TanStack Router pages
+├── supabase/         # Postgres migrations + RLS
+└── vercel.json
 ```
 
 ## Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/fetch_emails.py` | Sync Gmail → `data/candidates/` |
-| `scripts/extract_resume_text.py` | PDF → text in `extracted/` |
-
-### fetch_emails.py options
-
-| Flag | Description |
-|------|-------------|
-| `--only-new` | Skip already-processed message IDs; use after date of last run |
-| `--force` | Re-download processed messages |
-| `--query "..."` | Override Gmail search query |
-| `--after 2025/05/01` | Only emails after date |
-
-## Customization
-
-- **Tech stack & scoring:** edit `config/job-criteria.yaml`
-- **Scoring details:** `.cursor/skills/analyze-job-candidates/scoring-rubric.md`
-- **Gmail filter:** edit `GMAIL_QUERY` in `.env`
-
-## Security
-
-- `credentials.json`, `token.json`, `.env`, and `data/candidates/` are gitignored
-- Candidate data stays on your machine
-- Revoke access anytime: [Google Account permissions](https://myaccount.google.com/permissions)
-
-## Re-run workflow
-
-When new applicants email you:
-
 ```bash
-source .venv/bin/activate
-python scripts/fetch_emails.py --only-new
-python scripts/extract_resume_text.py
+bun run dev              # Dev server :3000
+bun run build            # Production build
+bun run migrate:local    # Import ./data into Supabase
+bun run db:studio        # Drizzle Studio
 ```
 
-Then ask Cursor to re-rank using the skill.
+## Legacy stack
 
-## Web application
-
-Full-stack dashboard to browse applicants, run heuristic rankings, manage pipeline status, sync Gmail, and view reports.
-
-### Install (web + API)
+To run the old local Next.js + FastAPI app:
 
 ```bash
-# Python (Gmail scripts + API)
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt -r requirements-server.txt
-
-# Frontend
-cd web && npm install && cp .env.local.example .env.local
-cd .. && npm install   # root concurrently for `npm run dev`
+cd old-app
+source ../.venv/bin/activate   # or create venv + pip install -r requirements.txt
+npm run dev                    # from old-app/package.json
 ```
 
-### Run locally
-
-```bash
-source .venv/bin/activate
-npm run dev
-```
-
-- **Web UI:** http://localhost:3000
-- **API:** http://localhost:8000/api/health
-
-Or run separately:
-
-```bash
-uvicorn server.main:app --reload --port 8000
-cd web && npm run dev
-```
-
-### Web features
-
-| Page | What it does |
-|------|----------------|
-| Dashboard | Applicant counts, pipeline stats, quick links |
-| Candidates | Search, filter, sort by score; star & status tags |
-| Candidate detail | Resume text, email, links, PDF download, score breakdown |
-| Rank & Analyze | Edit job criteria YAML, save, then run top-N ranking |
-| Rankings | Interactive top-N review with inline PDF resume preview |
-| Gmail Sync | Trigger fetch + PDF extract from the UI |
-
-Recruiter notes (status, stars, notes) are stored in `data/app.db` (local SQLite, gitignored).
-
-## Cloud full-stack migration
-
-The app is being extended into a multi-user web product **without removing** the local workflow above.
-
-- **Documentation:** [docs/README.md](./docs/README.md)
-- **Architecture & roadmap:** [docs/architecture.md](./docs/architecture.md), [docs/migration-roadmap.md](./docs/migration-roadmap.md)
-- **Phase 1 (auth):** Supabase login when `NEXT_PUBLIC_SUPABASE_*` env vars are set in `web/.env.local`
-- **SQL migration:** [supabase/migrations/20260530100000_foundation.sql](./supabase/migrations/20260530100000_foundation.sql)
-
-Local mode (no Supabase env vars) continues to work unchanged.
+See [`old-app/README.md`](old-app/README.md) for Gmail OAuth and local filesystem workflow.

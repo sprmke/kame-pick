@@ -4,6 +4,6 @@ set -euo pipefail
 
 cat <<'EOF'
 {
-  "additional_context": "Job Applicants Analyzer — dual-mode app (local FastAPI + filesystem AND phased Supabase cloud). Key docs: docs/architecture.md, docs/migration-roadmap.md. Dev: `source .venv/bin/activate && npm run dev`. Never commit data/candidates/, .env, or token.json. Cloud code goes in server/cloud/; do not remove local code until Phase 6."
+  "additional_context": "Job Applicants Analyzer — TanStack Start + Supabase at repo root. Legacy Next.js + FastAPI in old-app/. Dev: `bun run dev`. Never commit data/candidates/, .env, or token.json. Postgres migrations in supabase/migrations/."
 }
 EOF
