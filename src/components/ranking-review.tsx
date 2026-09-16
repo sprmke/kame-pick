@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import type { FilterOptions } from "#/components/rank-filters-panel";
 import { RankingSettingsButton, RankingSettingsModal } from "#/components/ranking-settings-modal";
@@ -9,13 +9,14 @@ import { Badge } from "#/components/ui/badge";
 import { GithubReposCell } from "#/components/github-repos-cell";
 import { RankingEmailBatch } from "#/components/ranking-email-batch";
 import type { CandidateListItem, ScoreBreakdown } from "#/lib/api";
+import type { JsonObject } from "#/lib/types";
 
 const PdfViewer = lazy(() => import('#/components/pdf-viewer').then((m) => ({ default: m.PdfViewer })))
 
 type RankingRunView = {
   id: number;
   name: string;
-  filter: Record<string, unknown>;
+  filter: JsonObject;
   created_at: string;
   results: CandidateListItem[];
 };

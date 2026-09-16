@@ -23,7 +23,7 @@ export async function enrichRankedResults(orgId: string, ranked: CandidateListIt
       : { slug: item.slug, status: 'new', starred: false, notes: '', tags: [] }
   }
 
-  await enrichEntriesWithGithub(ranked as Array<Record<string, unknown>>)
+  await enrichEntriesWithGithub(ranked)
 
   for (const item of ranked) {
     const files = await db.query.candidateFiles.findMany({

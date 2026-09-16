@@ -34,7 +34,7 @@ create policy "members can access org data"
 - Profile + default org created on signup via `on_auth_user_created` trigger (see foundation migration)
 - Never store service-role keys in frontend env vars
 
-## Storage (Phase 3+)
+## Storage
 
-- Bucket per org or path prefix: `{organization_id}/{candidate_slug}/`
+- Bucket path prefix: `{organization_id}/{candidate_slug}/`
 - Storage policies mirror Postgres RLS membership checks

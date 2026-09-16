@@ -1,9 +1,9 @@
 ---
 name: supabase-project-setup
 description: >-
-  Sets up Supabase for Kame Pick cloud mode — project creation,
-  env vars, migration apply, and OAuth. Use when configuring Supabase, enabling
-  cloud auth, applying SQL migrations, or debugging login issues.
+  Sets up Supabase for Kame Pick — project creation, env vars, migration apply,
+  and OAuth. Use when configuring Supabase, applying SQL migrations, or debugging
+  login issues.
 ---
 
 # Supabase Project Setup
@@ -11,62 +11,58 @@ description: >-
 ## Prerequisites
 
 - Supabase account at https://supabase.com
-- Supabase MCP enabled in Cursor (recommended) or Supabase CLI
+- Supabase CLI (recommended): `supabase login`
 
 ## Steps
 
 ### 1. Create project
 
-Create a new Supabase project. Note the project URL and anon key.
+Create a Supabase project. Note project ref, URL, and anon key.
 
-### 2. Apply foundation migration
+### 2. Apply migrations
 
-Run SQL from `supabase/migrations/20260530100000_foundation.sql` via:
-- Supabase dashboard → SQL Editor, or
-- `supabase link` + `supabase db push` (if CLI configured)
-
-Creates: `profiles`, `organizations`, `organization_members`, RLS, signup trigger.
-
-### 3. Configure web env
-
-Add to `web/.env.local`:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```bash
+supabase link --project-ref <ref>
+supabase db push
 ```
 
-Optional (future FastAPI JWT validation):
+Or run each file in `supabase/migrations/` via SQL Editor (in order).
 
-```env
-SUPABASE_JWT_SECRET=your-jwt-secret
+### 3. Configure `.env.local`
+
+```bash
+cp .env.example .env.local
 ```
 
-### 4. Optional — Google OAuth
+Set server and client vars to the **same project**:
 
-Supabase dashboard → Authentication → Providers → Google.
-Add redirect URL: `http://localhost:3000/auth/callback`
+```env
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+VITE_SUPABASE_URL=https://<ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=...
+DATABASE_URL=postgresql://postgres.<ref>:...@aws-0-<region>.pooler.supabase.com:6543/postgres
+```
+
+Use the **pooler** URI for `DATABASE_URL` (direct `db.*` host can be IPv6-only).
+
+### 4. Auth redirects
+
+Supabase → Authentication → URL Configuration:
+
+- `http://localhost:3000/auth/callback`
+- Production: `https://your-app.vercel.app/auth/callback`
 
 ### 5. Verify
 
 ```bash
-cd web && npm run dev
+bun run dev
 ```
 
-Visit http://localhost:3000 → should redirect to `/login`.
-Sign up → should create profile + default organization.
-
-## MCP tools (when available)
-
-Use Supabase MCP for:
-- `list_tables` — verify schema after migration
-- `apply_migration` — apply new migrations in dev
-- `get_advisors` — security/performance checks
-- `get_logs` — debug auth errors
-
-Load the Supabase agent skill for RLS and security guidance.
+Visit http://localhost:3000 → sign up → dashboard with default org.
 
 ## Reference
 
-- Module doc: `docs/modules/01-foundation-and-auth.md`
-- Local fallback: unset Supabase env vars to return to local mode
+- `docs/local-development.md`
+- `docs/production-deployment.md`

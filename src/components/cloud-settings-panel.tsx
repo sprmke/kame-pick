@@ -1,44 +1,48 @@
-
-
 import { useCallback, useEffect, useState } from "react";
+import { useSearch } from "@tanstack/react-router";
 
 import { api } from "#/lib/api";
-import { isCloudMode } from "#/lib/supabase/config";
+
+type GmailStatus = {
+  ready: boolean
+  from_email?: string | null
+  error?: string
+  connect_available?: boolean
+  connected_at?: string
+}
 
 export function CloudSettingsPanel() {
-  const cloud = isCloudMode();
-  const [gmail, setGmail] = useState<{ ready: boolean; from_email?: string; error?: string } | null>(null);
+  const search = useSearch({ strict: false }) as { gmail?: string; gmail_error?: string };
+  const [gmail, setGmail] = useState<GmailStatus | null>(null);
   const [org, setOrg] = useState<{ organization_id?: string; email?: string; org_role?: string } | null>(null);
-  const [loading, setLoading] = useState(cloud);
+  const [loading, setLoading] = useState(true);
+  const [callbackNotice, setCallbackNotice] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!cloud) return;
     setLoading(true);
     try {
       const [g, o] = await Promise.all([api.gmailStatus(), api.orgMe()]);
-      setGmail(g);
+      setGmail(g as GmailStatus);
       setOrg(o);
     } catch (e) {
       setGmail({ ready: false, error: e instanceof Error ? e.message : "Failed to load" });
     } finally {
       setLoading(false);
     }
-  }, [cloud]);
+  }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  if (!cloud) {
-    return (
-      <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">Cloud settings</h2>
-        <p className="mt-2 text-sm text-zinc-500">
-          Running in local mode. Set Supabase env vars and DATABASE_URL on the API to enable cloud features.
-        </p>
-      </section>
-    );
-  }
+  useEffect(() => {
+    if (search.gmail === "connected") {
+      setCallbackNotice("Gmail connected successfully.");
+      refresh();
+    } else if (search.gmail === "error") {
+      setCallbackNotice(search.gmail_error ?? "Gmail connection failed. Check Google OAuth redirect URI and env vars.");
+    }
+  }, [search.gmail, search.gmail_error, refresh]);
 
   async function connectGmail() {
     const { url } = await api.gmailConnectUrl();
@@ -73,8 +77,15 @@ export function CloudSettingsPanel() {
       <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="text-lg font-semibold">Gmail connection</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          Connect your Gmail account to sync applicants in cloud mode.
+          Connect your Gmail account to sync applicants.
         </p>
+        {callbackNotice && (
+          <p
+            className={`mt-3 text-sm ${callbackNotice.includes("success") ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-300"}`}
+          >
+            {callbackNotice}
+          </p>
+        )}
         {gmail?.ready ? (
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-green-100 px-3 py-1 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
@@ -102,20 +113,6 @@ export function CloudSettingsPanel() {
             </button>
           </div>
         )}
-      </div>
-
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">Import local data</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          One-time migration from <code className="text-xs">data/candidates/</code> and SQLite notes into your cloud
-          workspace. Run from your machine (requires local filesystem access):
-        </p>
-        <pre className="mt-4 overflow-x-auto rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-950">
-          bun run migrate:local
-        </pre>
-        <p className="mt-2 text-xs text-zinc-500">
-          Set <code>ORGANIZATION_ID</code> in <code>.env.local</code> before running.
-        </p>
       </div>
     </section>
   );

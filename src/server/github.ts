@@ -155,7 +155,14 @@ export async function getGithubProfile(username: string, refresh = false): Promi
   return { username, ...(profile ?? {}), from_cache: false } as GitHubInsights
 }
 
-export async function enrichEntriesWithGithub(entries: Array<Record<string, unknown>>) {
+export async function enrichEntriesWithGithub(
+  entries: Array<{
+    github_urls: string[]
+    github_username?: string | null
+    github_repo_count?: number | null
+    github_fetch_error?: string | null
+  }>,
+) {
   const usernames: string[] = []
   for (const entry of entries) {
     const urls = (entry.github_urls as string[]) ?? []
@@ -174,7 +181,7 @@ export async function enrichEntriesWithGithub(entries: Array<Record<string, unkn
     const row = cache.get(user.toLowerCase())
     const profile = row?.profile
     if (profile) {
-      entry.github_repo_count = profile.public_repos
+      entry.github_repo_count = typeof profile.public_repos === 'number' ? profile.public_repos : null
       entry.github_fetch_error = null
     } else if (row?.error) {
       entry.github_repo_count = row.public_repos
@@ -196,9 +203,9 @@ export async function githubApiStatus() {
   return {
     token_configured: Boolean(token),
     ok: true,
-    limit: core.limit,
-    remaining: core.remaining,
-    reset_at: core.reset,
+    limit: Number(core.limit ?? 0),
+    remaining: Number(core.remaining ?? 0),
+    reset_at: Number(core.reset ?? 0),
     authenticated: Boolean(token) && Number(core.limit ?? 0) > 60,
   }
 }

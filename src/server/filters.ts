@@ -1,4 +1,4 @@
-import type { CandidateLinks, CandidateListItem, ScoreBreakdown } from '#/lib/types'
+import type { CandidateLinks, CandidateListItem, RankPreviewStats, ScoreBreakdown } from '#/lib/types'
 import { loadCriteria } from '#/server/candidates'
 import { scoreCandidateText } from '#/server/scorer'
 import { getGithubCacheBulk } from '#/server/workflow'
@@ -25,7 +25,7 @@ export interface RankFilterConfig {
   top_n: number
 }
 
-export function rankFilterFromDict(data: Record<string, unknown>): RankFilterConfig {
+export function rankFilterFromDict(data: import('#/lib/rank-filters').RankPayload): RankFilterConfig {
   return {
     filipino_only: data.filipino_only !== false,
     exclude_auto_pass: data.exclude_auto_pass !== false,
@@ -249,7 +249,7 @@ export async function rankWithFilters(
   orgId: string,
   cfg: RankFilterConfig,
   allEntries: Array<Awaited<ReturnType<typeof buildCandidateProfile>> extends never ? never : Parameters<typeof buildCandidateProfile>[0]>,
-): Promise<[CandidateListItem[], Record<string, unknown>]> {
+): Promise<[CandidateListItem[], RankPreviewStats]> {
   const criteria = await loadCriteria(orgId)
   const usernames = allEntries
     .map((e) => usernameFromUrls([...e.links.github, ...e.github_urls]))

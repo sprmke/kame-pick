@@ -1,11 +1,15 @@
-import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { AppShell } from '#/components/app-shell'
 import { APP_NAME } from '#/lib/brand'
+import { enforceRouteAuth } from '#/server/route-auth'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
+  beforeLoad: async ({ location }) => {
+    await enforceRouteAuth(location.pathname)
+  },
   head: () => ({
     meta: [
       { charSet: 'utf-8' },

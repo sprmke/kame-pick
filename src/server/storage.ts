@@ -3,7 +3,6 @@ import { and, eq } from 'drizzle-orm'
 import { getDb } from '#/db'
 import { candidateFiles } from '#/db/schema'
 import { createServiceClient } from '#/lib/supabase/server'
-import { requireOrgContext } from '#/server/auth'
 
 const BUCKET = 'candidate-files'
 
@@ -73,11 +72,33 @@ export async function saveAttachment(
   bytes: Buffer,
   mimeType: string,
   metadata: Record<string, unknown> = {},
-) {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const storagePath = `${orgId}/${slug}/attachments/${filename}`
   const supabase = createServiceClient()
-  await supabase.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mimeType, upsert: true })
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, bytes, { contentType: mimeType, upsert: true })
+  if (uploadError) {
+    return { ok: false, error: uploadError.message }
+  }
+
   const db = getDb()
+  const existing = await db.query.candidateFiles.findFirst({
+    where: and(
+      eq(candidateFiles.organizationId, orgId),
+      eq(candidateFiles.candidateSlug, slug),
+      eq(candidateFiles.filename, filename),
+      eq(candidateFiles.kind, 'attachment'),
+    ),
+  })
+  if (existing) {
+    await db
+      .update(candidateFiles)
+      .set({ storagePath, mimeType, sizeBytes: bytes.length, metadata })
+      .where(eq(candidateFiles.id, existing.id))
+    return { ok: true }
+  }
+
   await db.insert(candidateFiles).values({
     organizationId: orgId,
     candidateSlug: slug,
@@ -88,6 +109,7 @@ export async function saveAttachment(
     sizeBytes: bytes.length,
     metadata,
   })
+  return { ok: true }
 }
 
 export function attachmentProxyPath(slug: string, filename: string) {

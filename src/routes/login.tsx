@@ -1,16 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useSearch } from '@tanstack/react-router'
 import { APP_NAME } from '#/lib/brand'
 import { createBrowserSupabase } from '#/lib/supabase/client'
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>): { next?: string } => {
+    const next = typeof search.next === 'string' ? search.next : undefined
+    return next ? { next } : {}
+  },
   component: LoginPage,
 })
 
 function LoginPage() {
-  const navigate = useNavigate()
+  const { next } = useSearch({ from: '/login' })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +31,8 @@ function LoginPage() {
       setError(authError.message)
       return
     }
-    navigate({ to: '/' })
+    // Full navigation so SSR/server functions receive auth cookies
+    window.location.href = next && next.startsWith('/') ? next : '/'
   }
 
   return (

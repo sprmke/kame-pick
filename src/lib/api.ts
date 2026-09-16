@@ -1,9 +1,11 @@
+import type { RankPayload } from '#/lib/rank-filters'
 import type {
   CandidateListItem,
   CandidateNote,
   EmailMessage,
   EmailThread,
   GitHubInsights,
+  GitHubRepoSummary,
   ScoreBreakdown,
   SyncJob,
 } from '#/lib/types'
@@ -38,7 +40,16 @@ import {
   updateCandidateNoteFn,
 } from '#/server/functions'
 
-export type { CandidateListItem, CandidateNote, EmailMessage, EmailThread, GitHubInsights, ScoreBreakdown, SyncJob }
+export type {
+  CandidateListItem,
+  CandidateNote,
+  EmailMessage,
+  EmailThread,
+  GitHubInsights,
+  GitHubRepoSummary,
+  ScoreBreakdown,
+  SyncJob,
+}
 
 export function attachmentUrl(slug: string, filename: string) {
   return `/pdf-proxy/${encodeURIComponent(slug)}/${encodeURIComponent(filename)}`
@@ -51,8 +62,8 @@ export const api = {
   updateNote: (slug: string, body: Partial<CandidateNote>) =>
     updateCandidateNoteFn({ data: { slug, ...body } }),
   filterOptions: () => getFilterOptionsFn(),
-  previewRank: (body: Record<string, unknown>) => previewRankFn({ data: body }),
-  rank: (body: Record<string, unknown>) => rankFn({ data: body }),
+  previewRank: (body: RankPayload) => previewRankFn({ data: body }),
+  rank: (body: RankPayload) => rankFn({ data: body }),
   reports: () => listReportsFn(),
   report: (id: number) => getReportFn({ data: id }),
   deleteReport: (id: number) => deleteReportFn({ data: id }),

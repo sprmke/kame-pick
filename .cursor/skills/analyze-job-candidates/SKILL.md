@@ -12,27 +12,25 @@ End-to-end workflow for this repo: sync Gmail → extract resumes → score → 
 
 ## Prerequisites
 
-1. User has run email sync at least once (see README).
-2. Candidate data lives in `data/candidates/` (gitignored — contains PII).
+1. User has synced applicants via the app (**Sync** page) or has cloud candidates in Supabase.
+2. For filesystem analysis: candidate data in `data/candidates/` (gitignored — contains PII).
 3. Scoring rubric: [scoring-rubric.md](scoring-rubric.md)
 4. Job config: [config/job-criteria.yaml](../../config/job-criteria.yaml)
 
 ## Step 1 — Sync new emails
 
-```bash
-cd /Users/michaelmanlulu/Projects/personal-projects/job-applicants-analyzer
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # first time only; edit GMAIL_QUERY
-python scripts/fetch_emails.py --only-new
-python scripts/extract_resume_text.py
-```
+In the running app (`bun run dev`):
 
-Re-run `--only-new` anytime new applicants email in. Use `--force` to re-download everything.
+1. **Settings** → connect Gmail (if not connected)
+2. **Sync** (`/sync`) → run fetch + extract or full sync
+
+Or query candidates already in Supabase via the app UI / server functions.
 
 ## Step 2 — Load candidate index
 
-Read `data/candidates/manifest.json` for the full list. For each candidate folder:
+**Cloud:** use the Candidates page or list APIs in `src/server/candidates.ts`.
+
+**Local filesystem (optional):** read `data/candidates/manifest.json`. For each candidate folder:
 
 | File | Purpose |
 |------|---------|
@@ -149,7 +147,7 @@ Save report to `data/reports/ranking-YYYY-MM-DD.md` and summarize in chat:
 
 | Issue | Fix |
 |-------|-----|
-| No candidates folder | Run `fetch_emails.py` first |
+| No candidates | Run Gmail sync from `/sync` first |
 | Empty PDF text | Scanned PDF — read attachment visually or OCR |
 | Wrong emails fetched | Edit `GMAIL_QUERY` in `.env`; add Gmail label |
-| Token expired | Delete `token.json`, re-run fetch (browser OAuth) |
+| Token expired | Settings → Disconnect Gmail, then Connect Gmail again |

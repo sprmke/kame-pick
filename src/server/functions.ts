@@ -24,7 +24,7 @@ export const listCandidatesFn = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const { requireOrgContext } = await import('#/server/auth')
     const candidateService = await import('#/server/candidates')
-    const { enrichEntriesWithGithub } = await import('#/server/ranking')
+    const { enrichEntriesWithGithub } = await import('#/server/github')
     const ctx = await requireOrgContext()
     const result = await candidateService.listCandidates(ctx.organizationId, {
       q: data.q,
@@ -36,7 +36,7 @@ export const listCandidatesFn = createServerFn({ method: 'GET' })
       page: data.page,
       perPage: data.per_page,
     })
-    await enrichEntriesWithGithub(result.candidates as Array<Record<string, unknown>>)
+    await enrichEntriesWithGithub(result.candidates)
     return result
   })
 
@@ -130,7 +130,7 @@ export const getFilterOptionsFn = createServerFn({ method: 'GET' }).handler(asyn
 })
 
 export const previewRankFn = createServerFn({ method: 'POST' })
-  .validator((body: Record<string, unknown>) => body)
+  .validator((body: import('#/lib/rank-filters').RankPayload) => body)
   .handler(async ({ data }) => {
     const { requireOrgContext } = await import('#/server/auth')
     const { rankFilterFromDict, rankWithFilters } = await import('#/server/filters')
@@ -143,7 +143,7 @@ export const previewRankFn = createServerFn({ method: 'POST' })
   })
 
 export const rankFn = createServerFn({ method: 'POST' })
-  .validator((body: Record<string, unknown>) => body)
+  .validator((body: import('#/lib/rank-filters').RankPayload) => body)
   .handler(async ({ data }) => {
     const { requireOrgContext } = await import('#/server/auth')
     const { rankFilterFromDict, rankWithFilters } = await import('#/server/filters')
@@ -159,7 +159,7 @@ export const rankFn = createServerFn({ method: 'POST' })
       runId = await candidateService.saveAnalysisRun(
         ctx.organizationId,
         String(data.report_name ?? 'web-ranking'),
-        data,
+        data as import('#/lib/types').JsonObject,
         enriched,
       )
     }

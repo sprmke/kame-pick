@@ -61,8 +61,7 @@ export function CandidateEmailPanel({
 
       {gmailReady === false && (
         <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-          Gmail send is not ready. Re-authorize with send permission: delete <code>token.json</code> and
-          run sync or send again to open the OAuth flow (scopes: read + send).
+          Gmail send is not ready. Connect Gmail in Settings (read + send scopes).
         </p>
       )}
 

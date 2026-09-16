@@ -1,5 +1,4 @@
 const URL_PATTERN = /https?:\/\/[^\s<>"')\]]+/gi
-const GITHUB_PATTERN = /https?:\/\/(?:www\.)?github\.com\/[^\s<>"')\]]+/gi
 
 export function slugifyEmail(value: string) {
   return value

@@ -3,7 +3,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { createBrowserSupabase } from '#/lib/supabase/client'
-import { isCloudMode } from '#/lib/supabase/config'
 
 export const Route = createFileRoute('/auth/callback')({
   component: AuthCallbackPage,
@@ -24,11 +23,6 @@ function AuthCallbackPage() {
     }
 
     if (!code) {
-      navigate({ to: '/' })
-      return
-    }
-
-    if (!isCloudMode()) {
       navigate({ to: '/' })
       return
     }

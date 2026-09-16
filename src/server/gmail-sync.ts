@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { getDb } from '#/db'
 import { candidates, syncState } from '#/db/schema'
 import {
@@ -64,16 +64,6 @@ async function upsertCandidateFromMessage(
 
   const { plain, attachments } = parseMessagePayload(msg.payload)
   const links = extractUrls(plain, subject)
-
-  for (const att of attachments) {
-    const filename = safeFilename(att.filename)
-    const savedAs = `${msg.id}_${filename}`
-    const content = await downloadAttachment(gmail, msg.id, att.attachment_id)
-    await saveAttachment(orgId, slug, savedAs, content, att.mime_type || 'application/pdf', {
-      filename,
-      message_id: msg.id,
-    })
-  }
 
   const messageIds = [...new Set([...(existingMeta.message_ids as string[] ?? []), msg.id])].sort()
   const emailBlock = `From: ${fromHeader}\nSubject: ${subject}\nDate: ${dateHeader ?? ''}\n\n${plain}`
@@ -148,7 +138,21 @@ async function upsertCandidateFromMessage(
       },
     })
 
-  return slug
+  const skippedAttachments: string[] = []
+  for (const att of attachments) {
+    const filename = safeFilename(att.filename)
+    const savedAs = `${msg.id}_${filename}`
+    const content = await downloadAttachment(gmail, msg.id, att.attachment_id)
+    const result = await saveAttachment(orgId, slug, savedAs, content, att.mime_type || 'application/pdf', {
+      filename,
+      message_id: msg.id,
+    })
+    if (!result.ok) {
+      skippedAttachments.push(`${savedAs}: ${result.error}`)
+    }
+  }
+
+  return { slug, skippedAttachments }
 }
 
 export function runFetchEmails(orgId: string, userId: string, onlyNew = true, force = false) {
@@ -164,16 +168,20 @@ export function runFetchEmails(orgId: string, userId: string, onlyNew = true, fo
       const listRes = await gmail.users.messages.list({ userId: 'me', q: query, maxResults: 100 })
       const ids = listRes.data.messages?.map((m) => m.id!).filter(Boolean) ?? []
       let imported = 0
+      const skippedAttachments: string[] = []
       const newIds: string[] = []
       for (const id of ids) {
         if (onlyNew && processed.has(id) && !force) continue
         const full = await gmail.users.messages.get({ userId: 'me', id, format: 'full' })
-        const slug = await upsertCandidateFromMessage(orgId, gmail, {
+        const result = await upsertCandidateFromMessage(orgId, gmail, {
           id,
           threadId: full.data.threadId ?? undefined,
           payload: full.data.payload as Parameters<typeof parseMessagePayload>[0],
         }, force)
-        if (slug) imported++
+        if (result) {
+          imported++
+          skippedAttachments.push(...result.skippedAttachments)
+        }
         newIds.push(id)
       }
       const mergedIds = [...new Set([...processed, ...newIds])]
@@ -184,7 +192,12 @@ export function runFetchEmails(orgId: string, userId: string, onlyNew = true, fo
           target: syncState.organizationId,
           set: { processedMessageIds: mergedIds, lastRunAt: new Date() },
         })
-      await finishSyncJob(jobId, 'success', `Imported ${imported} candidates from ${ids.length} messages`)
+      let message = `Imported ${imported} candidates from ${ids.length} messages`
+      if (skippedAttachments.length > 0) {
+        message += `. Skipped ${skippedAttachments.length} attachment(s): ${skippedAttachments.slice(0, 3).join('; ')}`
+        if (skippedAttachments.length > 3) message += ` (+${skippedAttachments.length - 3} more)`
+      }
+      await finishSyncJob(jobId, 'success', message)
     } catch (e) {
       await finishSyncJob(jobId, 'error', String(e))
     }

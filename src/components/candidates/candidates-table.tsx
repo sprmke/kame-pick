@@ -5,7 +5,7 @@ import { GithubReposCell } from '#/components/github-repos-cell'
 import { ScoreBadge, TierBadge } from '#/components/score-badge'
 import { StatusBadge } from '#/components/status-badge'
 import type { CandidateListItem } from '#/lib/api'
-import { useCandidatesNavigate, useCandidatesSearch } from '#/lib/router-helpers'
+import { useCandidatesNavigate } from '#/lib/router-helpers'
 import { cn } from '#/lib/utils'
 
 const COLUMNS = [
@@ -27,7 +27,6 @@ export function CandidatesTable({
   order: string;
 }) {
   const navigate = useCandidatesNavigate()
-  const search = useCandidatesSearch()
   const routerNavigate = useNavigate()
 
   function toggleSort(column: string) {
@@ -86,7 +85,7 @@ export function CandidatesTable({
               onClick={(e) => openCandidate(c.slug, e)}
               onAuxClick={(e) => openCandidate(c.slug, e)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") router.push(`/candidates/${c.slug}`);
+                if (e.key === "Enter") routerNavigate({ to: '/candidates/$slug', params: { slug: c.slug } })
               }}
               className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50"
             >

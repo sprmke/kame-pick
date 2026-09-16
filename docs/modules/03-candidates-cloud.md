@@ -1,38 +1,25 @@
-# Module 03 — Candidates (cloud storage)
+# Candidates & Storage
 
-**Status:** Code complete  
-**Phase:** 3
-
-## Purpose
-
-Store candidate manifest data, emails, and PDF attachments in Postgres + Supabase Storage instead of `data/candidates/`.
+Candidates live in Postgres. PDFs are in Supabase Storage.
 
 ## Tables
 
-- `candidates` — manifest fields + metadata/links/email_text JSON
+- `candidates` — manifest fields + metadata / links / email text
 - `candidate_files` — attachment paths + extracted text
-- `sync_state` — per-org Gmail processed message IDs
+- `sync_state` — processed Gmail message IDs
 
 ## Storage
 
 Bucket: `candidate-files`  
-Path pattern: `{organization_id}/{slug}/attachments/{filename}`
+Path: `{organization_id}/{slug}/attachments/{filename}`
 
-## API
+## App paths
 
-Store delegation in `server/stores/candidates.py` — same function names as local `server/services/candidates.py`.
+| Path | Role |
+|------|------|
+| `src/server/candidates.ts` | List / get / notes / criteria |
+| `src/server/storage.ts` | Upload + download |
+| `src/routes/pdf-proxy/$slug/$filename.tsx` | Authenticated PDF proxy |
+| `scripts/migrate-local-data.ts` | Optional one-time import from `./data` |
 
-| Endpoint | Notes |
-|----------|-------|
-| `POST /api/import/local` | One-time migration from local filesystem |
-| `GET /api/candidates/{slug}/attachment/{file}` | Serves bytes from Storage in cloud mode |
-
-## Web
-
-Cloud PDF viewing uses `/api/attachment/[slug]/[filename]` Next.js proxy (adds Bearer token).
-
-## Changelog
-
-| Date | Change |
-|------|--------|
-| 2026-05-30 | Candidates table, Storage, import tool, attachment proxy |
+Run `bun run migrate:local` if you have a leftover filesystem `data/` folder.

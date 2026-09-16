@@ -5,10 +5,10 @@ set -euo pipefail
 input=$(cat)
 file_path=$(echo "$input" | jq -r '.file_path // .path // empty')
 
-if [[ "$file_path" == supabase/migrations/* ]] || [[ "$file_path" == server/cloud/* ]]; then
+if [[ "$file_path" == supabase/migrations/* ]]; then
   cat <<EOF
 {
-  "additional_context": "You edited \`$file_path\`. If this implements a migration phase, update the matching docs/modules/*.md changelog and verify RLS policies. Test both local mode (no Supabase env) and cloud mode."
+  "additional_context": "You edited \`$file_path\`. Update docs/modules/*.md if schema semantics changed. Verify RLS policies on all tenant tables."
 }
 EOF
   exit 0

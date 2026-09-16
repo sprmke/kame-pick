@@ -46,8 +46,7 @@ export async function buildAuthorizeUrl(orgId: string, userId: string) {
 export async function exchangeCode(code: string, state: string) {
   const db = getDb()
   const row = await db.query.gmailOauthStates.findFirst({ where: eq(gmailOauthStates.state, state) })
-  if (!row) throw new Error('Invalid OAuth state')
-  await db.delete(gmailOauthStates).where(eq(gmailOauthStates.state, state))
+  if (!row) throw new Error('Invalid or expired OAuth state — click Connect Gmail again')
 
   const { clientId, clientSecret, redirectUri } = oauthConfig()
   const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
@@ -61,7 +60,10 @@ export async function exchangeCode(code: string, state: string) {
       grant_type: 'authorization_code',
     }),
   })
-  if (!tokenRes.ok) throw new Error('Token exchange failed')
+  if (!tokenRes.ok) {
+    const detail = await tokenRes.text()
+    throw new Error(`Token exchange failed: ${detail.slice(0, 200)}`)
+  }
   const tokenData = (await tokenRes.json()) as Record<string, unknown>
 
   const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri)
@@ -102,6 +104,8 @@ export async function exchangeCode(code: string, state: string) {
         updatedAt: new Date(),
       },
     })
+
+  await db.delete(gmailOauthStates).where(eq(gmailOauthStates.state, state))
 
   return { email_address: emailAddress, organization_id: row.organizationId }
 }

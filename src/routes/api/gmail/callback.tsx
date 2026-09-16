@@ -18,8 +18,16 @@ export const Route = createFileRoute('/api/gmail/callback')({
           const { exchangeCode } = await import('#/server/gmail-oauth')
           await exchangeCode(code, state)
           settingsUrl.searchParams.set('gmail', 'connected')
-        } catch {
+        } catch (err) {
           settingsUrl.searchParams.set('gmail', 'error')
+          const raw = err instanceof Error ? err.message : 'Gmail connection failed'
+          const friendly = raw.includes('malformed array literal')
+            ? 'Could not save Gmail connection — retry Connect Gmail'
+            : raw.includes('Token exchange failed')
+              ? 'Google rejected the OAuth token — check redirect URI in Google Cloud Console'
+              : raw.slice(0, 180)
+          settingsUrl.searchParams.set('gmail_error', friendly)
+          console.error('[gmail/callback]', err)
         }
 
         return Response.redirect(settingsUrl)

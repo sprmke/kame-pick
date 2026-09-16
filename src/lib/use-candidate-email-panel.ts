@@ -114,7 +114,6 @@ export function useCandidateEmailPanel(slug: string, analysisRunId?: number) {
         setSendMsg("Email sent — status set to shortlisted");
         setBody("");
         await refreshThread();
-        await loadThread()
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Send failed");

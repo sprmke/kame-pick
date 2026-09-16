@@ -46,31 +46,7 @@ CREATE TABLE public.organizations (
 
 ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "organizations_select_member"
-  ON public.organizations FOR SELECT
-  TO authenticated
-  USING (
-    id IN (
-      SELECT organization_id FROM public.organization_members
-      WHERE user_id = (SELECT auth.uid())
-    )
-  );
-
-CREATE POLICY "organizations_update_owner_admin"
-  ON public.organizations FOR UPDATE
-  TO authenticated
-  USING (
-    id IN (
-      SELECT organization_id FROM public.organization_members
-      WHERE user_id = (SELECT auth.uid()) AND role IN ('owner', 'admin')
-    )
-  )
-  WITH CHECK (
-    id IN (
-      SELECT organization_id FROM public.organization_members
-      WHERE user_id = (SELECT auth.uid()) AND role IN ('owner', 'admin')
-    )
-  );
+-- Organization RLS policies are created after organization_members (they reference that table).
 
 -- ---------------------------------------------------------------------------
 -- Organization members
@@ -142,6 +118,33 @@ CREATE POLICY "org_members_insert_self_owner"
   TO authenticated
   WITH CHECK (
     user_id = (SELECT auth.uid()) AND role = 'owner'
+  );
+
+-- Organizations RLS (requires organization_members to exist)
+CREATE POLICY "organizations_select_member"
+  ON public.organizations FOR SELECT
+  TO authenticated
+  USING (
+    id IN (
+      SELECT organization_id FROM public.organization_members
+      WHERE user_id = (SELECT auth.uid())
+    )
+  );
+
+CREATE POLICY "organizations_update_owner_admin"
+  ON public.organizations FOR UPDATE
+  TO authenticated
+  USING (
+    id IN (
+      SELECT organization_id FROM public.organization_members
+      WHERE user_id = (SELECT auth.uid()) AND role IN ('owner', 'admin')
+    )
+  )
+  WITH CHECK (
+    id IN (
+      SELECT organization_id FROM public.organization_members
+      WHERE user_id = (SELECT auth.uid()) AND role IN ('owner', 'admin')
+    )
   );
 
 -- Allow org creation by authenticated users (signup bootstrap)

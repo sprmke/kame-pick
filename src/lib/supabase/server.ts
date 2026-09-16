@@ -44,7 +44,3 @@ export function createServerSupabase() {
 
   return { supabase, headers }
 }
-
-export function createBrowserSupabase() {
-  return createClient(getSupabaseUrl(), getSupabaseAnonKey())
-}

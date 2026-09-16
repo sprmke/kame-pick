@@ -11,18 +11,43 @@ import { join, resolve } from 'node:path'
 import { Database } from 'bun:sqlite'
 import { eq } from 'drizzle-orm'
 import { getDb } from '../src/db/index.ts'
-import { candidateFiles, candidateNotes, candidates, analysisRuns } from '../src/db/schema.ts'
+import { candidateFiles, candidateNotes, candidates, analysisRuns, organizations } from '../src/db/schema.ts'
 import { createServiceClient } from '../src/lib/supabase/server.ts'
 
 const DATA_DIR = resolve(process.env.LOCAL_DATA_DIR ?? './data')
 const CANDIDATES_DIR = join(DATA_DIR, 'candidates')
 const DB_PATH = join(DATA_DIR, 'app.db')
-const ORG_ID = process.env.ORGANIZATION_ID
 
-if (!ORG_ID) {
-  console.error('ORGANIZATION_ID is required — copy your org UUID from Supabase after signup')
+async function resolveOrganizationId(): Promise<string> {
+  const fromEnv = process.env.ORGANIZATION_ID?.trim()
+  if (fromEnv) return fromEnv
+
+  const db = getDb()
+  const orgs = await db
+    .select({ id: organizations.id, name: organizations.name, slug: organizations.slug })
+    .from(organizations)
+
+  if (orgs.length === 1) {
+    const org = orgs[0]!
+    console.log(`Using sole organization: ${org.name} (${org.slug}) → ${org.id}`)
+    return org.id
+  }
+
+  if (orgs.length === 0) {
+    console.error('No organizations found.')
+    console.error('Sign up at http://localhost:3000/signup first, then re-run migrate:local.')
+    console.error('Or set ORGANIZATION_ID in .env.local from Supabase → organizations.id')
+    process.exit(1)
+  }
+
+  console.error('Multiple organizations found — set ORGANIZATION_ID in .env.local to one of:')
+  for (const org of orgs) {
+    console.error(`  ${org.id}  ${org.name} (${org.slug})`)
+  }
   process.exit(1)
 }
+
+const ORG_ID = await resolveOrganizationId()
 
 interface ManifestEntry {
   slug: string

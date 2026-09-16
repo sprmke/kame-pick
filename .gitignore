@@ -30,28 +30,6 @@ __unconfig*
 todos.json
 *.local
 
-# --- Legacy stack (old-app/) ---
-old-app/node_modules/
-old-app/web/node_modules/
-old-app/web/.next/
-old-app/web/out/
-old-app/web/.turbo
-
-# --- Python (legacy local scripts in old-app/) ---
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-*.egg-info/
-
 # --- Logs & debug ---
 *.log
 npm-debug.log*
@@ -73,5 +51,7 @@ Thumbs.db
 .vercel
 
 # --- Tool caches ---
+.venv/
 .fallow/
 Library/
+supabase/.temp/

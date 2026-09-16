@@ -173,7 +173,7 @@ export const gmailConnections = pgTable(
     userId: uuid('user_id').notNull(),
     emailAddress: text('email_address').notNull().default(''),
     credentialsEncrypted: text('credentials_encrypted').notNull(),
-    scopes: jsonb('scopes').$type<string[]>().notNull().default([]),
+    scopes: text('scopes').array().notNull(),
     connectedAt: timestamp('connected_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

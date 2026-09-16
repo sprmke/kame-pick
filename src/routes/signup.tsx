@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { APP_NAME } from '#/lib/brand'
 import { createBrowserSupabase } from '#/lib/supabase/client'
 
@@ -10,7 +10,6 @@ export const Route = createFileRoute('/signup')({
 })
 
 function SignupPage() {
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [orgName, setOrgName] = useState('')
@@ -35,7 +34,7 @@ function SignupPage() {
       setError(authError.message)
       return
     }
-    navigate({ to: '/' })
+    window.location.href = '/'
   }
 
   return (

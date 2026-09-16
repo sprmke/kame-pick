@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '#/db'
 import {
   analysisRuns,
@@ -11,10 +11,12 @@ import {
 import { loadDefaultCriteria, scoreCandidateText } from '#/server/scorer'
 import type {
   CandidateFull,
+  CandidateLinks,
   CandidateListItem,
   CandidateNote,
   DashboardData,
   JobCriteriaData,
+  JsonObject,
 } from '#/lib/types'
 import { parse as parseYaml } from 'yaml'
 
@@ -38,9 +40,9 @@ export async function getJobCriteriaResponse(orgId: string): Promise<JobCriteria
     const raw = await import('node:fs/promises').then((fs) =>
       fs.readFile(new URL('../../config/job-criteria.yaml', import.meta.url), 'utf-8'),
     )
-    return { raw, parsed: parseYaml(raw) as Record<string, unknown> }
+    return { raw, parsed: parseYaml(raw) as JobCriteriaData['parsed'] }
   }
-  return { raw: row.content, parsed: parseYaml(row.content) as Record<string, unknown> }
+  return { raw: row.content, parsed: parseYaml(row.content) as JobCriteriaData['parsed'] }
 }
 
 export async function saveJobCriteria(orgId: string, content: string) {
@@ -191,7 +193,7 @@ export async function listCandidates(
         { emailText: row.emailText, metadata: row.metadata as Record<string, unknown> },
         files.map((f) => f.contentText ?? ''),
       )
-      item.score = scoreCandidateText(text, row.links as CandidateListItem['links'] & { github: string[] }, criteria)
+      item.score = scoreCandidateText(text, row.links as CandidateLinks, criteria)
     }
     items.push(item)
   }
@@ -306,7 +308,7 @@ export async function getCandidate(orgId: string, slug: string): Promise<Candida
     attachment_count: row.attachmentCount,
     primary_pdf: row.primaryPdf,
     pdf_label: row.pdfLabel,
-    metadata: row.metadata as Record<string, unknown>,
+    metadata: row.metadata as JsonObject,
     links,
     email_text: row.emailText,
     attachments,
@@ -369,7 +371,7 @@ export async function listAnalysisRuns(orgId: string) {
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
-    filter: r.filterJson as Record<string, unknown>,
+    filter: r.filterJson as JsonObject,
     created_at: r.createdAt.toISOString(),
   }))
 }
@@ -383,7 +385,7 @@ export async function getAnalysisRun(orgId: string, runId: number) {
   return {
     id: row.id,
     name: row.name,
-    filter: row.filterJson as Record<string, unknown>,
+    filter: row.filterJson as JsonObject,
     results: row.resultsJson as CandidateListItem[],
     created_at: row.createdAt.toISOString(),
   }
@@ -401,7 +403,7 @@ export async function deleteAnalysisRun(orgId: string, runId: number) {
 export async function saveAnalysisRun(
   orgId: string,
   name: string,
-  filter: Record<string, unknown>,
+  filter: JsonObject,
   results: CandidateListItem[],
 ) {
   const db = getDb()

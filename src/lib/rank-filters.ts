@@ -79,7 +79,30 @@ export function fromRankPayload(raw: Record<string, unknown>): RankFiltersState 
   }
 }
 
-export function toRankPayload(f: RankFiltersState) {
+export type RankPayload = {
+  report_name: string
+  top_n: number
+  filipino_only: boolean
+  exclude_auto_pass: boolean
+  min_dev_years: number | null
+  max_dev_years: number | null
+  experience_level: string
+  has_github: boolean | null
+  min_github_repos: number | null
+  tech_any: string[]
+  tech_all: string[]
+  locations: string[]
+  gender: string
+  min_age: number | null
+  max_age: number | null
+  has_honors: boolean | null
+  has_ai_tools: boolean | null
+  min_score: number | null
+  tiers: string[]
+  save_run: boolean
+}
+
+export function toRankPayload(f: RankFiltersState): RankPayload {
   return {
     report_name: f.report_name,
     top_n: f.top_n,

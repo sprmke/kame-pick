@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Kame Pick
 
-Multi-tenant hiring tool on **TanStack Start + Supabase**. Legacy Next.js + FastAPI stack archived in `old-app/`.
+Multi-tenant hiring tool on **TanStack Start + Supabase**.
 
 ## Stack
 
@@ -14,24 +14,21 @@ Multi-tenant hiring tool on **TanStack Start + Supabase**. Legacy Next.js + Fast
 | Full-stack app | `src/` | TanStack Start, React 19, Tailwind 4 |
 | Server logic | `src/server/` | TypeScript server functions |
 | Database | Supabase Postgres | Drizzle ORM (`src/db/`) |
-| Local PII (migration source) | `data/candidates/` | Filesystem (gitignored) |
+| Local PII (optional import) | `data/candidates/` | Filesystem (gitignored) |
 | Auth & storage | `supabase/` | Supabase Auth + RLS + Storage |
 | Config | `config/` | `job-criteria.yaml`, email templates |
-| Legacy stack | `old-app/` | Next.js 16 + FastAPI (archived) |
-| Docs | `docs/` | Architecture, migration roadmap |
+| Docs | `docs/` | Architecture, deployment |
 
 ## Dev commands
 
 ```bash
 bun install && bun run dev          # :3000
-bun run migrate:local               # data/ → Supabase
+bun run migrate:local               # optional: data/ → Supabase
 bun run build                       # production build
 ```
-
-Legacy local stack: `cd old-app && npm run dev` (see `old-app/README.md`).
 
 ## Key references
 
 - Architecture: `docs/architecture.md`
-- Migration history: `docs/migration-roadmap.md`
+- Deployment: `docs/production-deployment.md`
 - Candidate analysis: `.cursor/skills/analyze-job-candidates/SKILL.md`

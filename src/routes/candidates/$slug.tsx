@@ -7,9 +7,10 @@ import { CandidateLinksPanel } from '#/components/candidate-links-panel'
 import { getCandidateFn } from '#/server/functions'
 
 export const Route = createFileRoute('/candidates/$slug')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    run_id: search.run_id ? Number(search.run_id) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { run_id?: number } => {
+    const run_id = search.run_id ? Number(search.run_id) : undefined
+    return Number.isFinite(run_id) ? { run_id } : {}
+  },
   loader: ({ params }) => getCandidateFn({ data: params.slug }),
   component: CandidateDetailPage,
 })

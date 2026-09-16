@@ -62,10 +62,6 @@ Connect Gmail to pull in resumes, score applicants against a configurable YAML r
 - **Per-org job criteria** stored in Postgres
 - **Gmail connection management** — connect, disconnect, sync status
 
-### Legacy stack
-
-The previous **Next.js + FastAPI** local stack is preserved in [`old-app/`](old-app/) for reference. See [`old-app/README.md`](old-app/README.md) for the original Gmail CLI and filesystem workflow.
-
 ---
 
 ## Tech Stack
@@ -128,13 +124,13 @@ Fill in:
 | `SUPABASE_URL`                 | Supabase project URL                                     |
 | `SUPABASE_ANON_KEY`            | Supabase anon key (server)                               |
 | `SUPABASE_SERVICE_ROLE_KEY`    | Service role key (server only — never expose to client)  |
-| `DATABASE_URL`                 | Postgres connection string (port 5432, direct)           |
+| `DATABASE_URL`                 | Supabase pooler connection string (see `.env.example`)   |
 | `VITE_SUPABASE_URL`            | Same project URL (client)                                |
 | `VITE_SUPABASE_ANON_KEY`       | Same anon key (client)                                   |
 | `GOOGLE_OAUTH_CLIENT_ID`       | Google OAuth client ID (Web)                             |
 | `GOOGLE_OAUTH_CLIENT_SECRET`   | Google OAuth client secret                               |
 | `GOOGLE_OAUTH_REDIRECT_URI`    | `http://localhost:3000/api/gmail/callback`               |
-| `TOKEN_ENCRYPTION_KEY`         | Fernet key for encrypted Gmail refresh tokens            |
+| `TOKEN_ENCRYPTION_KEY`         | Secret used to encrypt Gmail refresh tokens (any long random string) |
 | `GITHUB_TOKEN`                 | Optional — GitHub API rate limits                        |
 | `GMAIL_QUERY`                  | Optional — Gmail search query for applicant emails       |
 | `RECRUITER_TEAM_NAME`          | Optional — used in outreach email templates              |
@@ -165,7 +161,7 @@ Open [http://localhost:3000](http://localhost:3000) → sign up → dashboard.
 
 ### 5. Migrate existing local data (optional)
 
-If you have data from the legacy local stack in `./data/`:
+If you have a local `./data/` folder from a previous filesystem workflow:
 
 1. Sign up and copy your **organization UUID** from Supabase into `.env.local`:
 
@@ -205,6 +201,7 @@ See [`docs/production-deployment.md`](docs/production-deployment.md) for the ful
 | `bun run preview`     | Preview production build locally     |
 | `bun run migrate:local` | Import `./data` into Supabase      |
 | `bun run db:studio`   | Drizzle Studio (database browser)    |
+| `bun run typecheck`   | TypeScript check (`tsc --noEmit`) |
 | `bun run generate-routes` | Regenerate TanStack Router routes |
 
 ---
@@ -214,8 +211,7 @@ See [`docs/production-deployment.md`](docs/production-deployment.md) for the ful
 ```text
 config/                 # job-criteria.yaml, email templates
 data/                   # local candidate PII (gitignored)
-docs/                   # architecture, migration roadmap, module docs
-old-app/                # legacy Next.js + FastAPI stack (archived)
+docs/                   # architecture, deployment, migration history
 scripts/                # migrate-local-data.ts
 src/
   db/                   # Drizzle schema
@@ -254,9 +250,9 @@ vercel.json
 | Doc | Description |
 | --- | ----------- |
 | [`docs/architecture.md`](docs/architecture.md) | System overview and tenancy model |
-| [`docs/migration-roadmap.md`](docs/migration-roadmap.md) | Cloud migration phases |
+| [`docs/migration-roadmap.md`](docs/migration-roadmap.md) | Historical migration notes |
 | [`docs/production-deployment.md`](docs/production-deployment.md) | Production deploy checklist |
-| [`old-app/README.md`](old-app/README.md) | Legacy local stack workflow |
+| [`docs/local-development.md`](docs/local-development.md) | Local dev setup |
 
 ---
 

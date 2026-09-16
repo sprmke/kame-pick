@@ -1,3 +1,6 @@
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
+export type JsonObject = { [key: string]: JsonValue }
+
 export interface ScoreBreakdown {
   experience_tier: string
   experience_years: number | null
@@ -60,7 +63,7 @@ export interface DashboardData {
   with_github: number
   with_attachments: number
   manifest_updated_at: string | null
-  status_counts: Record<string, number>
+  status_counts: { [status: string]: number }
   starred_count: number
   reports_count: number
   analysis_runs_count: number
@@ -76,7 +79,7 @@ export interface CandidateLinks {
 }
 
 export interface CandidateFull extends CandidateListItem {
-  metadata: Record<string, unknown>
+  metadata: JsonObject
   links: CandidateLinks
   email_text: string
   attachments: Array<{
@@ -84,6 +87,7 @@ export interface CandidateFull extends CandidateListItem {
     saved_as: string
     mime_type: string
     size_bytes?: number
+    exists?: boolean
   }>
   extracted: Array<{ filename: string; content: string; chars: number }>
 }
@@ -91,7 +95,7 @@ export interface CandidateFull extends CandidateListItem {
 export interface AnalysisRun {
   id: number
   name: string
-  filter: Record<string, unknown>
+  filter: JsonObject
   created_at: string
   results?: CandidateListItem[]
 }
@@ -111,6 +115,30 @@ export interface EmailMessage {
   created_at?: string
   status: string
   error?: string | null
+  source?: string
+}
+
+export interface EmailThread {
+  slug: string
+  analysis_run_id: number | null
+  candidate_email: string
+  default_subject: string
+  gmail_thread_id: string | null
+  has_outbound: boolean
+  messages: EmailMessage[]
+}
+
+export interface GitHubRepoSummary {
+  name: string
+  url: string
+  description: string | null
+  language: string | null
+  stars: number
+  forks: number
+  is_fork: boolean
+  pushed_at: string | null
+  days_since_push: number | null
+  is_active: boolean
 }
 
 export interface GitHubInsights {
@@ -121,23 +149,18 @@ export interface GitHubInsights {
   public_repos?: number
   followers?: number
   following?: number
+  account_created_at?: string | null
   owned_repo_count?: number
+  fork_repos_count?: number
   active_repo_count?: number
+  inactive_repo_count?: number
   is_active?: boolean
   activity_label?: string
+  last_pushed_at?: string | null
+  days_since_last_push?: number | null
   total_stars?: number
-  top_repos?: Array<{
-    name: string
-    url: string
-    description: string | null
-    language: string | null
-    stars: number
-    forks: number
-    is_fork: boolean
-    pushed_at: string | null
-    days_since_push: number | null
-    is_active: boolean
-  }>
+  top_repos?: GitHubRepoSummary[]
+  recent_active_repos?: GitHubRepoSummary[]
   fetched_at?: string
   from_cache?: boolean
   error?: string
@@ -152,5 +175,31 @@ export interface OrgContext {
 
 export interface JobCriteriaData {
   raw: string
-  parsed: Record<string, unknown> | null
+  parsed: JsonObject | null
+}
+
+export interface RankPreviewStats {
+  total_synced: number
+  matched_pool: number
+  returned: number
+  exclusion_counts: { [reason: string]: number }
+}
+
+export interface GithubApiStatus {
+  token_configured: boolean
+  ok: boolean
+  error?: string
+  limit?: number
+  remaining?: number
+  reset_at?: number
+  authenticated?: boolean
+}
+
+export interface BatchEmailResult {
+  slug: string
+  ok: boolean
+  skipped?: boolean
+  error?: string
+  message?: EmailMessage
+  status_updated?: boolean
 }

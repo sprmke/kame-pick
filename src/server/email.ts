@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { getDb } from '#/db'
 import { candidateNotes, emailMessages } from '#/db/schema'
-import type { CandidateNote, EmailMessage } from '#/lib/types'
+import type { BatchEmailResult, EmailMessage } from '#/lib/types'
 import { loadCriteria } from '#/server/candidates'
 import { getCandidate } from '#/server/candidates'
 import { getGmailServiceForUser, gmailStatus } from '#/server/gmail-oauth'
@@ -237,7 +237,7 @@ export async function sendCandidateEmail(
       target: [candidateNotes.organizationId, candidateNotes.slug],
       set: { status: 'shortlisted', updatedAt: new Date() },
     })
-  return { ok: true, message: record, status_updated: true }
+  return { ok: true as const, message: record, status_updated: true, error: undefined as string | undefined }
 }
 
 export async function sendBatchEmails(
@@ -262,7 +262,7 @@ export async function sendBatchEmails(
       ),
     )
   const already = new Set(contacted.map((r) => r.slug))
-  const results: Array<Record<string, unknown>> = []
+  const results: BatchEmailResult[] = []
   let sent = 0
   let failed = 0
   let skipped = 0

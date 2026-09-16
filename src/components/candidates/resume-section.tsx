@@ -8,7 +8,7 @@ type Attachment = {
   filename: string;
   saved_as: string;
   mime_type: string;
-  exists: boolean;
+  exists?: boolean;
 };
 
 type Extracted = {
@@ -20,7 +20,7 @@ type Extracted = {
 type ResumeTab = "pdf" | "text";
 
 function isPdfAttachment(attachment: Attachment): boolean {
-  return attachment.exists && (attachment.mime_type === "application/pdf" || attachment.filename.toLowerCase().endsWith(".pdf"));
+  return Boolean(attachment.exists !== false) && (attachment.mime_type === "application/pdf" || attachment.filename.toLowerCase().endsWith(".pdf"));
 }
 
 function resolveInitialTab(pdfs: Attachment[], extracted: Extracted[]): ResumeTab {

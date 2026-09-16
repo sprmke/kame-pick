@@ -2,70 +2,60 @@
 
 ## Overview
 
-Kame Pick is evolving from a **single-user local tool** into a **multi-tenant web application** while keeping the original implementation intact until the cloud path is finalized.
+Kame Pick is a **multi-tenant hiring dashboard**: Gmail sync → candidate storage → scoring → outreach. Single full-stack app on TanStack Start, backed by Supabase.
 
 ```mermaid
 flowchart TB
   subgraph client [Browser]
-    Web[Next.js 16 App]
+    App[TanStack Start App]
   end
 
-  subgraph local [Local mode — unchanged]
-    API[FastAPI :8000]
-    SQLite[(SQLite data/app.db)]
-    FS[data/candidates/ filesystem]
-    GmailLocal[token.json OAuth]
+  subgraph cloud [Supabase]
+    Auth[Supabase Auth]
+    DB[(Postgres)]
+    Store[Storage — PDFs]
   end
 
-  subgraph cloud [Cloud mode — phased in]
-    SupaAuth[Supabase Auth]
-    SupaDB[(Supabase Postgres)]
-    SupaStore[Supabase Storage]
-    Jobs[Background jobs — future]
+  subgraph external [External APIs]
+    Gmail[Gmail API]
+    GitHub[GitHub API]
   end
 
-  Web -->|local API| API
-  Web -->|session| SupaAuth
-  API --> SQLite
-  API --> FS
-  API --> GmailLocal
-  API -.->|future| SupaDB
-  API -.->|future| SupaStore
-  Jobs -.-> API
+  App --> Auth
+  App --> DB
+  App --> Store
+  App --> Gmail
+  App --> GitHub
 ```
 
 ## Stack
 
-| Layer | Technology | Notes |
-|-------|------------|-------|
-| Frontend | Next.js 16, React 19, Tailwind 4 | Existing UI in `web/` |
-| Backend | FastAPI (Python) | Existing API in `server/` |
-| Local DB | SQLite | Recruiter notes, runs, email log |
-| Local files | `data/candidates/` | Emails, PDFs, manifest |
-| Cloud auth | Supabase Auth | Email/password + Google (optional) |
-| Cloud DB | Supabase Postgres | Orgs, members, candidates (phased) |
-| Cloud files | Supabase Storage | Resumes & attachments (phased) |
-| Jobs | Inngest or Trigger.dev | Gmail sync workers (future) |
-| Hosting | Vercel + Railway/Fly | Web + API (future) |
+| Layer | Technology | Path |
+|-------|------------|------|
+| Runtime | Bun | repo root |
+| Framework | TanStack Start + Router | `src/routes/` |
+| UI | React 19, Tailwind 4 | `src/components/` |
+| Server | Server functions | `src/server/` |
+| ORM | Drizzle | `src/db/` |
+| Auth | Supabase Auth (cookie SSR) | `src/lib/supabase/` |
+| Database | Supabase Postgres | `supabase/migrations/` |
+| Files | Supabase Storage | candidate PDFs |
+| Hosting | Vercel (Nitro) | `vercel.json` |
 
-## Tenancy model
+## Tenancy
 
-- **Organization** — hiring team / company workspace
+- **Organization** — hiring team workspace
 - **Organization member** — user with role (`owner`, `admin`, `member`)
-- All cloud data is scoped by `organization_id`
-- Row Level Security (RLS) enforces isolation in Postgres
+- All tenant data scoped by `organization_id`
+- RLS enforces isolation in Postgres and Storage
 
-## API authentication (future)
+## Auth flow
 
-FastAPI will validate Supabase JWTs and resolve `organization_id` from membership. Until wired, the existing API remains open on localhost (local mode).
+- Browser: `@supabase/ssr` `createBrowserClient` (cookies)
+- Server: `createServerClient` reads cookies via TanStack `getRequest()`
+- Route guard: `src/server/route-auth.ts` redirects unauthenticated users to `/login`
+- Signup trigger creates profile + default org (`handle_new_user` in foundation migration)
 
-## What stays local-only (for now)
+## Optional local import
 
-These continue to use the original implementation:
-
-- `scripts/fetch_emails.py` and `server/services/sync.py`
-- `server/db.py` (SQLite)
-- `server/services/candidates.py` (filesystem manifest)
-- Desktop Gmail OAuth (`credentials.json`, `token.json`)
-
-Cloud equivalents will be added as **new modules** under `server/cloud/` and documented separately.
+`scripts/migrate-local-data.ts` imports legacy `./data/candidates/` + SQLite into Supabase (one-time). Not required for normal operation.
