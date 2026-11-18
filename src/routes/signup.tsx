@@ -69,6 +69,7 @@ function SignupPage() {
           Password
           <input
             type="password"
+            autoComplete="new-password"
             required
             minLength={8}
             value={password}
