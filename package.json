@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
+    "ui": "./scripts/dev/ui-worktree.sh",
+    "ui:port": "./scripts/dev/ui-worktree.sh --print-port",
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
