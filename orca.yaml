@@ -1,0 +1,15 @@
+# Orca worktree lifecycle for Kame Pick.
+# Sticky per-worktree Vite port (3300-3399) and a UI tab.
+
+scripts:
+  setup: |
+    bun install
+    cp -n "$ORCA_ROOT_PATH/.env.local" .env.local 2>/dev/null || true
+  archive: |
+    bash scripts/dev/archive-worktree-ui.sh
+
+setupAgentStartupPolicy: wait-for-setup
+
+defaultTabs:
+  - title: UI
+    command: bun run ui
